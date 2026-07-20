@@ -1,6 +1,9 @@
 dist/
 .claude/
 
-# 4.5MB source extract; re-fetch with the curl in the README. map_data.json is the
-# committed artifact, since Netlify's build needs it and it's 10x smaller.
+# Raw source extracts; re-fetch with the curls in the README. The built *_data.json
+# files are the committed artifacts, since Netlify's build needs them and they're
+# far smaller (subway_lines.json alone is 8.8MB).
 nta.geojson
+subway_lines.json
+subway_stations.json
