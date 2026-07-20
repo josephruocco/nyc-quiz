@@ -12,6 +12,7 @@
     --bk: #1E7A6E;
     --qn: #4A5CB8;
     --bx: #A83A62;
+    --si: #6D4AA6;
     --miss: #B02E2E;
     --display: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
@@ -20,18 +21,18 @@
     :root {
       --paper: #101215; --panel: #191C21; --line: #333944; --text: #E7EAEE;
       --dim: #8A929D; --water: #15181C;
-      --mn: #E8934F; --bk: #45B8A8; --qn: #8B9BEA; --bx: #E27BA0; --miss: #E56B6B;
+      --mn: #E8934F; --bk: #45B8A8; --qn: #8B9BEA; --bx: #E27BA0; --si: #B497E8; --miss: #E56B6B;
     }
   }
   :root[data-theme="light"] {
     --paper: #EAECEF; --panel: #F5F6F8; --line: #C9CDD3; --text: #14161A;
     --dim: #6A7079; --water: #DFE3E8;
-    --mn: #B65A1F; --bk: #1E7A6E; --qn: #4A5CB8; --bx: #A83A62; --miss: #B02E2E;
+    --mn: #B65A1F; --bk: #1E7A6E; --qn: #4A5CB8; --bx: #A83A62; --si: #6D4AA6; --miss: #B02E2E;
   }
   :root[data-theme="dark"] {
     --paper: #101215; --panel: #191C21; --line: #333944; --text: #E7EAEE;
     --dim: #8A929D; --water: #15181C;
-    --mn: #E8934F; --bk: #45B8A8; --qn: #8B9BEA; --bx: #E27BA0; --miss: #E56B6B;
+    --mn: #E8934F; --bk: #45B8A8; --qn: #8B9BEA; --bx: #E27BA0; --si: #B497E8; --miss: #E56B6B;
   }
 
   body { background: var(--paper); color: var(--text); font-family: var(--display); -webkit-font-smoothing: antialiased; }
@@ -120,8 +121,8 @@
 <script>
 const HOODS = /*DATA*/;
 const ROUNDS = 20;
-const COLOR = { "Manhattan": "--mn", "Brooklyn": "--bk", "Queens": "--qn", "The Bronx": "--bx" };
-const BOROS = ["Manhattan", "Brooklyn", "Queens", "The Bronx"];
+const COLOR = { "Manhattan": "--mn", "Brooklyn": "--bk", "Queens": "--qn", "The Bronx": "--bx", "Staten Island": "--si" };
+const BOROS = ["Manhattan", "Brooklyn", "Queens", "The Bronx", "Staten Island"];
 
 const active = new Set(BOROS);
 let POOL = HOODS;   // the boroughs currently switched on: drawn, asked, and fitted to

@@ -108,7 +108,10 @@
 
 <script>
 const SUBWAY = /*SUBWAY*/;
-const LAND = /*DATA*/;          // neighborhood polygons, drawn faintly so the network has a shoreline
+// Neighborhood polygons, drawn faintly so the network has a shoreline. Staten
+// Island is dropped: no subway reaches it, so it would hang off the corner of a
+// view fitted to the tracks as a landmass with nothing on it.
+const LAND = (/*DATA*/).filter(h => h.b !== "Staten Island");
 const ROUNDS = 20;
 const SNAP_PX = 14;             // how close the cursor must be to grab a line
 

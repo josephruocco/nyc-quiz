@@ -1,7 +1,7 @@
 # nyc-quiz
 
-Three quizzes over NYC's 181 neighborhoods (Manhattan, Brooklyn, Queens, the Bronx),
-built from the city's NTA boundary data. Each game is a single self-contained HTML
+Quizzes over NYC's 197 neighborhoods across all five boroughs, built from the
+city's NTA boundary data, plus two over the subway network. Each game is a single self-contained HTML
 file with the geometry embedded — no runtime fetches, no dependencies.
 
 - **Fill In the Map** — type a neighborhood, it paints itself onto the city. Pick your
@@ -11,7 +11,11 @@ file with the geometry embedded — no runtime fetches, no dependencies.
 - **Name Every Neighborhood** — no map, just a list to fill in.
 - **Pinpoint the Line** — the subway network drawn but unlabeled. Click anywhere along
   the train you're asked for. Hard mode gives you a station name instead, so you have
-  to know which line serves it. Geographic map; Staten Island Railway is left out.
+  to know which line serves it. Geographic map. Staten Island Railway is left out:
+  it is a separate railway with no track connection, and fitting it would zoom the
+  whole map across the harbour.
+- **Which Train?** — a station name and the full set of bullets. Pick every line that
+  stops there, with no map to work it out from.
 
 ## Build
 

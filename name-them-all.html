@@ -12,6 +12,7 @@
     --bk: #1E7A6E;
     --qn: #4A5CB8;
     --bx: #A83A62;
+    --si: #6D4AA6;
     --miss: #B02E2E;
     --display: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
@@ -28,18 +29,19 @@
       --bk: #45B8A8;
       --qn: #8B9BEA;
       --bx: #E27BA0;
+      --si: #B497E8;
       --miss: #E56B6B;
     }
   }
   :root[data-theme="light"] {
     --paper: #EAECEF; --panel: #F5F6F8; --line: #C9CDD3; --text: #14161A;
     --dim: #6A7079; --slot: #D5D9DE;
-    --mn: #B65A1F; --bk: #1E7A6E; --qn: #4A5CB8; --bx: #A83A62; --miss: #B02E2E;
+    --mn: #B65A1F; --bk: #1E7A6E; --qn: #4A5CB8; --bx: #A83A62; --si: #6D4AA6; --miss: #B02E2E;
   }
   :root[data-theme="dark"] {
     --paper: #101215; --panel: #191C21; --line: #2C313A; --text: #E7EAEE;
     --dim: #8A929D; --slot: #262B33;
-    --mn: #E8934F; --bk: #45B8A8; --qn: #8B9BEA; --bx: #E27BA0; --miss: #E56B6B;
+    --mn: #E8934F; --bk: #45B8A8; --qn: #8B9BEA; --bx: #E27BA0; --si: #B497E8; --miss: #E56B6B;
   }
 
   body {
@@ -104,7 +106,8 @@
   }
   .flash.hit { color: var(--text); }
 
-  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; }
+  .grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 22px; }
+  @media (max-width: 1100px) { .grid { grid-template-columns: repeat(3, 1fr); } }
   @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
   @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
 
@@ -153,7 +156,8 @@ const BOROUGHS = [
   ["Manhattan", "--mn", ["Marble Hill","Inwood","Washington Heights","Hudson Heights","Hamilton Heights","Manhattanville","Morningside Heights","Central Harlem","East Harlem","Upper West Side","Lincoln Square","Upper East Side","Lenox Hill","Yorkville","Carnegie Hill","Roosevelt Island","Hell's Kitchen","Midtown","Times Square","Theater District","Koreatown","Hudson Yards","Turtle Bay","Sutton Place","Tudor City","Murray Hill","Kips Bay","NoMad","Gramercy","Stuyvesant Town","Flatiron District","Union Square","Chelsea","Meatpacking District","Greenwich Village","West Village","East Village","Alphabet City","NoHo","SoHo","Nolita","Bowery","Little Italy","Chinatown","Lower East Side","Two Bridges","Tribeca","Civic Center","Financial District","Battery Park City"]],
   ["Brooklyn", "--bk", ["Greenpoint","Williamsburg","East Williamsburg","Bushwick","Bedford-Stuyvesant","Ocean Hill","Brownsville","East New York","Cypress Hills","Canarsie","Starrett City","Bergen Beach","Mill Basin","Marine Park","Sheepshead Bay","Manhattan Beach","Brighton Beach","Coney Island","Sea Gate","Gravesend","Bath Beach","Bensonhurst","Dyker Heights","Fort Hamilton","Bay Ridge","Sunset Park","Borough Park","Kensington","Windsor Terrace","Greenwood","Park Slope","Gowanus","Prospect Heights","Prospect Lefferts Gardens","Crown Heights","Flatbush","Ditmas Park","East Flatbush","Midwood","Carroll Gardens","Cobble Hill","Boerum Hill","Red Hook","Downtown Brooklyn","Brooklyn Heights","DUMBO","Vinegar Hill","Navy Yard","Fort Greene","Clinton Hill"]],
   ["Queens", "--qn", ["Astoria","Ditmars Steinway","Long Island City","Hunters Point","Sunnyside","Blissville","Woodside","Jackson Heights","East Elmhurst","Elmhurst","Corona","Willets Point","Flushing","Murray Hill","College Point","Whitestone","Beechhurst","Malba","Bay Terrace","Auburndale","Bayside","Oakland Gardens","Douglaston","Little Neck","Glen Oaks","Bellerose","Floral Park","Queens Village","Hollis","Holliswood","Jamaica Estates","Fresh Meadows","Kew Gardens Hills","Pomonok","Hillcrest","Briarwood","Jamaica","South Jamaica","St. Albans","Cambria Heights","Laurelton","Rosedale","Springfield Gardens","Howard Beach","Lindenwood","Ozone Park","South Ozone Park","Richmond Hill","Woodhaven","Kew Gardens","Forest Hills","Rego Park","Middle Village","Glendale","Ridgewood","Maspeth","Far Rockaway","Arverne","Edgemere","Rockaway Beach","Rockaway Park","Belle Harbor","Neponsit","Breezy Point","Broad Channel"]],
-  ["The Bronx", "--bx", ["Mott Haven","Port Morris","Melrose","Hunts Point","Longwood","Foxhurst","Morrisania","Claremont","Crotona Park East","West Farms","Concourse","Highbridge","Morris Heights","University Heights","Mount Eden","Mount Hope","Tremont","Bathgate","Belmont","Fordham","Bedford Park","Norwood","Kingsbridge","Kingsbridge Heights","Riverdale","North Riverdale","Fieldston","Spuyten Duyvil","Woodlawn","Wakefield","Williamsbridge","Olinville","Edenwald","Baychester","Co-op City","Eastchester","Allerton","Bronxdale","Pelham Parkway","Pelham Gardens","Morris Park","Van Nest","Parkchester","Westchester Square","Throgs Neck","Locust Point","Silver Beach","Country Club","Pelham Bay","City Island","Castle Hill","Unionport","Soundview","Clason Point","Schuylerville"]]
+  ["The Bronx", "--bx", ["Mott Haven","Port Morris","Melrose","Hunts Point","Longwood","Foxhurst","Morrisania","Claremont","Crotona Park East","West Farms","Concourse","Highbridge","Morris Heights","University Heights","Mount Eden","Mount Hope","Tremont","Bathgate","Belmont","Fordham","Bedford Park","Norwood","Kingsbridge","Kingsbridge Heights","Riverdale","North Riverdale","Fieldston","Spuyten Duyvil","Woodlawn","Wakefield","Williamsbridge","Olinville","Edenwald","Baychester","Co-op City","Eastchester","Allerton","Bronxdale","Pelham Parkway","Pelham Gardens","Morris Park","Van Nest","Parkchester","Westchester Square","Throgs Neck","Locust Point","Silver Beach","Country Club","Pelham Bay","City Island","Castle Hill","Unionport","Soundview","Clason Point","Schuylerville"]],
+  ["Staten Island", "--si", ["St. George","New Brighton","Tompkinsville","Stapleton","Clifton","Rosebank","Shore Acres","Arrochar","Fort Wadsworth","South Beach","Midland Beach","Dongan Hills","Grant City","New Dorp","Oakwood","Bay Terrace","Great Kills","Eltingville","Annadale","Huguenot","Prince's Bay","Pleasant Plains","Richmond Valley","Tottenville","Charleston","Rossville","Woodrow","Arden Heights","Greenridge","Heartland Village","New Springville","Bulls Head","Travis","Willowbrook","Westerleigh","Castleton Corners","Graniteville","Port Richmond","Mariners Harbor","Elm Park","West Brighton","Silver Lake","Grymes Hill","Emerson Hill","Todt Hill","Lighthouse Hill","Richmondtown","Egbertville","Concord","Randall Manor","Livingston","Sunnyside","Grasmere","Old Town"]],
 ];
 
 const ALIASES = {

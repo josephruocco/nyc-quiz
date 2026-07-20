@@ -42,7 +42,6 @@ const hoods = [];
 for (const f of src.features) {
   const p = f.properties;
   if (p.ntatype !== "0") continue;           // drop parks, airports, cemeteries, islands
-  if (p.boroname === "Staten Island") continue;
 
   // keep only outer rings; holes don't matter for hit-testing at this scale
   const polys = (f.geometry.type === "Polygon" ? [f.geometry.coordinates] : f.geometry.coordinates)
