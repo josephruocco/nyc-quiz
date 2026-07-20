@@ -35,6 +35,10 @@
     .theme-pick button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
     .theme-pick button[aria-pressed="true"] { background: var(--text); color: var(--paper); border-color: var(--text); }
     @media (max-width: 480px) { .theme-pick { top: 8px; right: 8px; } }
+    .site-credit {
+      max-width: 1080px; margin: 0 auto; padding: 0 20px 32px;
+      font-family: var(--mono, monospace); font-size: 12px; color: var(--dim);
+    }
   `;
   document.head.appendChild(style);
 
@@ -75,6 +79,12 @@
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (!root.dataset.theme) sync(); });
   document.body.appendChild(box);
 
+  // Byline, appended after the switch so it really is the last thing on the page.
+  const credit = document.createElement("footer");
+  credit.className = "site-credit";
+  credit.textContent = "Created by Joseph Ruocco";
+  document.body.appendChild(credit);
+
   // self-check
   console.assert(getComputedStyle(box).position === "fixed", "theme switch stays out of the layout");
   console.assert(buttons.filter(([, b]) => b.getAttribute("aria-pressed") === "true").length === 1,
@@ -82,4 +92,5 @@
   // A saved choice must survive the reload that brought us here.
   console.assert(!saved || root.dataset.theme === saved, "the saved theme is applied on load");
   console.assert(onMenu === !box.querySelector("a.home"), "every page but the menu has a way home");
+  console.assert(document.body.lastElementChild === credit, "the byline sits at the bottom of the page");
 })();
