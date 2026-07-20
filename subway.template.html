@@ -78,13 +78,13 @@
 <div class="wrap">
   <header>
     <h1>Pinpoint the Line</h1>
-    <p class="sub">Every subway line is drawn, none are labeled. Click anywhere along the one you're asked for — you don't need the exact station, just the right strand. 20 rounds.</p>
+    <p class="sub">Every subway line is drawn, none are labeled. Hover to pick out a line, then click it. You don't need the exact station, just the right strand. 20 rounds.</p>
   </header>
 
   <div class="prompt">
     <span class="round" id="round">Round 1</span>
     <span class="ask"><span id="askBullet"></span><span class="askText" id="askText">Loading…</span></span>
-    <span class="stats"><b id="hits">0</b> on the line &middot; avg miss <b id="avg">—</b></span>
+    <span class="stats"><b id="hits">0</b> right &middot; avg miss <b id="avg">—</b></span>
   </div>
 
   <div class="opts">
@@ -110,7 +110,7 @@
 const SUBWAY = /*SUBWAY*/;
 const LAND = /*DATA*/;          // neighborhood polygons, drawn faintly so the network has a shoreline
 const ROUNDS = 20;
-const HIT_MI = 0.12;            // ~2 blocks. Zoom helps you aim; it doesn't move the goalposts.
+const SNAP_PX = 14;             // how close the cursor must be to grab a line
 
 // Official bullet colours. The yellow and grey ones carry dark type.
 const COLOR = {
@@ -130,6 +130,16 @@ const BY_ID = new Map(ROUTES.map(r => [r.r, r]));
 // Hard mode is only a real test when the stop doesn't hand you the whole map:
 // a 2-line stop makes you choose, Times Sq would not.
 const STOPS = SUBWAY.stations.filter(s => s.r.length <= 2);
+
+// "145 St" in Manhattan is four different stations on four different lines, and
+// the prompt can't say which. Accept any line serving any station of that name.
+const SERVED_BY = new Map();
+for (const s of STOPS) {
+  const k = `${s.n}|${s.b}`;
+  const set = SERVED_BY.get(k) || SERVED_BY.set(k, new Set()).get(k);
+  for (const id of s.r) set.add(id);
+}
+const acceptedFor = stop => [...SERVED_BY.get(`${stop.n}|${stop.b}`)];
 
 const el = id => document.getElementById(id);
 const cssVar = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
@@ -188,9 +198,38 @@ function nearestOn(pt, route) {
   return best;
 }
 
+// Same thing in screen pixels, for grabbing a line with the cursor. Pixels rather
+// than miles here on purpose: the grab radius should feel identical at every zoom.
+function segDistPx(p, a, b) {
+  const bx = b[0] - a[0], by = b[1] - a[1];
+  const len = bx * bx + by * by;
+  const t = len ? Math.max(0, Math.min(1, ((p[0] - a[0]) * bx + (p[1] - a[1]) * by) / len)) : 0;
+  return Math.hypot(p[0] - a[0] - bx * t, p[1] - a[1] - by * t);
+}
+// Every route within grabbing distance, nearest first. More than one comes back
+// where lines share track, and any of them is a fair answer there.
+function routesAt(sx, sy) {
+  const pt = [sx, sy];
+  const found = [];
+  for (const route of ROUTES) {
+    let best = Infinity;
+    for (const line of route.p) {
+      let prev = px(line[0]);
+      for (let i = 1; i < line.length; i++) {
+        const cur = px(line[i]);
+        const d = segDistPx(pt, prev, cur);
+        if (d < best) best = d;
+        prev = cur;
+      }
+    }
+    if (best <= SNAP_PX) found.push({ route, d: best });
+  }
+  return found.sort((a, b) => a.d - b.d);
+}
+
 // ---- state
 let round = 0, hits = 0, misses = [], target = null, answers = [], guess = null,
-    answered = false, best = null, mode = "line";
+    answered = false, best = null, mode = "line", picked = null, hover = null;
 let order = [];
 
 function paintLine(route, width, color) {
@@ -223,14 +262,21 @@ function draw() {
   const rail = cssVar("--rail");
   for (const route of ROUTES) paintLine(route, 2, rail);
 
+  // The line under the cursor thickens so you can see what you're about to pick.
+  // Still no colour and no name — that would give the round away.
+  if (hover && !answered) paintLine(hover, 5, cssVar("--dim"));
+
   if (answered && answers.length) {
+    const right = answers.includes(picked);
+    // The wrong grab, so you can see which strand you actually took.
+    if (!right && picked) paintLine(BY_ID.get(picked), 4, cssVar("--miss"));
     // Casing first. The L and S wear grey bullets that sit right on top of the
     // neutral network colour, so hue alone can't carry the highlight.
     for (const id of answers) paintLine(BY_ID.get(id), 8, cssVar("--text"));
     for (const id of answers) paintLine(BY_ID.get(id), 4.5, COLOR[id] || cssVar("--text"));
     if (guess) {
       const [gx, gy] = px(guess);
-      if (best && best.d > HIT_MI) {
+      if (!right && best) {
         const [nx, ny] = px(best.at);
         ctx.strokeStyle = cssVar("--miss");
         ctx.lineWidth = 1.5;
@@ -238,7 +284,7 @@ function draw() {
         ctx.beginPath(); ctx.moveTo(gx, gy); ctx.lineTo(nx, ny); ctx.stroke();
         ctx.setLineDash([]);
       }
-      ctx.fillStyle = best && best.d <= HIT_MI ? "#1E7A6E" : cssVar("--miss");
+      ctx.fillStyle = right ? "#1E7A6E" : cssVar("--miss");
       ctx.beginPath(); ctx.arc(gx, gy, 5, 0, 7); ctx.fill();
     }
   }
@@ -257,8 +303,8 @@ function bullet(id, small) {
 function ask() {
   if (round >= order.length) return finish();
   target = order[round];
-  guess = null; answered = false; best = null;
-  answers = mode === "line" ? [target.r] : target.r;
+  guess = null; answered = false; best = null; picked = null; hover = null;
+  answers = mode === "line" ? [target.r] : acceptedFor(target);
   cv.classList.remove("done");
   el("round").textContent = `Round ${round + 1} of ${order.length}`;
   el("askBullet").replaceChildren(mode === "line" ? bullet(target.r) : "");
@@ -272,22 +318,36 @@ function ask() {
 
 function place(sx, sy) {
   if (!target || answered) return;
+
+  // You answer by grabbing a line, not by clicking a patch of map. Empty space
+  // isn't a wrong answer, it's no answer — the round just stays open.
+  const under = routesAt(sx, sy);
+  if (!under.length) {
+    el("verdict").textContent = "";
+    el("detail").textContent = "Click on a line — the one under the cursor thickens.";
+    return;
+  }
+
   guess = toLonLat([sx, sy]);
   answered = true;
+  hover = null;
   cv.classList.add("done");
 
-  // Credit the closest of the acceptable lines — a stop served by two trains is
-  // answered by either.
+  // Where lines share track several come back at once, and any accepted one counts.
+  const grabbed = under.map(u => u.route.r);
+  picked = grabbed.find(id => answers.includes(id)) || grabbed[0];
+  const on = answers.includes(picked);
+
   best = answers.map(id => nearestOn(guess, BY_ID.get(id))).reduce((a, b) => (b.d < a.d ? b : a));
-  const on = best.d <= HIT_MI;
   if (on) hits++; else misses.push(best.d);
 
-  el("verdict").textContent = on ? "On the line." : "Off the line.";
+  el("verdict").textContent = on ? "Got it." : "Wrong line.";
   el("verdict").className = "verdict " + (on ? "good" : "bad");
-  const named = answers.map(id => id).join(" or ");
-  el("detail").textContent = mode === "line"
-    ? (on ? `${best.d.toFixed(2)} mi from the tracks` : `${best.d.toFixed(2)} mi off — the ${target.r} is highlighted`)
-    : (on ? `the ${named} — ${best.d.toFixed(2)} mi from the tracks` : `that stop is on the ${named} — ${best.d.toFixed(2)} mi off`);
+  const named = answers.join(" or ");
+  el("detail").textContent = on
+    ? (mode === "line" ? `that's the ${picked}` : `${target.n} is on the ${named}`)
+    : (mode === "line" ? `you picked the ${picked} — the ${target.r} is highlighted, ${best.d.toFixed(2)} mi away`
+                       : `you picked the ${picked} — ${target.n} is on the ${named}`);
   el("hits").textContent = hits;
   el("avg").textContent = misses.length ? (misses.reduce((a, b) => a + b, 0) / misses.length).toFixed(2) + " mi" : "—";
   el("next").hidden = false;
@@ -302,7 +362,7 @@ function finish() {
   cv.classList.add("done");
   el("round").textContent = "Done";
   el("askBullet").replaceChildren();
-  el("askText").textContent = `${hits} of ${order.length} landed on the line`;
+  el("askText").textContent = `${hits} of ${order.length} lines identified`;
   el("detail").textContent = misses.length
     ? `average miss ${(misses.reduce((a, b) => a + b, 0) / misses.length).toFixed(2)} mi over ${misses.length}`
     : "perfect run";
@@ -316,7 +376,7 @@ function finish() {
 function restart() {
   const pool = mode === "line" ? ROUTES.map(r => ({ r: r.r, n: r.n })) : STOPS;
   order = pool.map(x => x).sort(() => Math.random() - 0.5).slice(0, ROUNDS);
-  round = 0; hits = 0; misses = []; guess = null; answered = false; best = null;
+  round = 0; hits = 0; misses = []; guess = null; answered = false; best = null; picked = null; hover = null;
   zoom = 1; panX = 0; panY = 0;
   el("hits").textContent = "0";
   el("avg").textContent = "—";
@@ -366,8 +426,26 @@ cv.addEventListener("pointerdown", e => {
   drag = { x: e.clientX, y: e.clientY, px: panX, py: panY, moved: false };
   cv.setPointerCapture(e.pointerId);
 });
+// Hover runs a scan over every segment, so keep it to one per frame.
+let hoverQueued = false;
+function updateHover(sx, sy) {
+  if (hoverQueued) return;
+  hoverQueued = true;
+  requestAnimationFrame(() => {
+    hoverQueued = false;
+    if (answered || drag) return;
+    const under = routesAt(sx, sy);
+    const next = under.length ? under[0].route : null;
+    if (next === hover) return;
+    hover = next;
+    cv.style.cursor = hover ? "pointer" : "crosshair";
+    draw();
+  });
+}
+
 cv.addEventListener("pointermove", e => {
-  if (!drag) return;
+  const r = cv.getBoundingClientRect();
+  if (!drag) return updateHover(e.clientX - r.left, e.clientY - r.top);
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
   if (!drag.moved && Math.hypot(dx, dy) < SLOP) return;
   drag.moved = true;
@@ -376,6 +454,7 @@ cv.addEventListener("pointermove", e => {
   clampPan();
   draw();
 });
+cv.addEventListener("pointerleave", () => { if (hover) { hover = null; draw(); } });
 cv.addEventListener("pointerup", e => {
   const wasDrag = drag && drag.moved;
   drag = null;
@@ -408,8 +487,16 @@ console.assert(ROUTES.every(r => COLOR[r.r]), "every route has a bullet colour")
 console.assert(STOPS.length > 100, "enough one- and two-line stops for hard mode");
 console.assert(STOPS.every(s => s.r.every(id => BY_ID.has(id))), "every hard-mode stop maps to a drawn line");
 // A station must sit on its own line, or the quiz is unwinnable by design.
-console.assert(STOPS.every(s => Math.min(...s.r.map(id => nearestOn(s.c, BY_ID.get(id)).d)) <= HIT_MI),
-  "every stop is within the hit tolerance of a line that serves it");
+console.assert(STOPS.every(s => Math.min(...s.r.map(id => nearestOn(s.c, BY_ID.get(id)).d)) <= 0.12),
+  "every stop sits on a line that serves it");
+// Grabbing must work where it matters: a point taken off a route's own geometry
+// has to return that route, and open water has to return nothing.
+(() => {
+  const r = ROUTES[0];
+  const p = r.p[0][Math.floor(r.p[0].length / 2)];
+  console.assert(routesAt(...px(p)).some(u => u.route === r), "a point on a line grabs that line");
+  console.assert(routesAt(...px([-73.78, 40.50])).length === 0, "open water grabs nothing");
+})();
 // screen <-> lonlat must round-trip under zoom, or clicks score against the wrong spot
 (() => {
   const [z0, x0, y0] = [zoom, panX, panY];

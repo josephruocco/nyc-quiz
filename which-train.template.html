@@ -1,0 +1,248 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Which Train?</title>
+<style>
+  :root {
+    --paper: #EAECEF; --panel: #F5F6F8; --line: #C9CDD3; --text: #14161A; --dim: #6A7079;
+    --good: #1E7A6E; --miss: #B02E2E;
+    --display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --paper: #101215; --panel: #191C21; --line: #333944; --text: #E7EAEE;
+            --dim: #8A929D; --good: #45B8A8; --miss: #E56B6B; }
+  }
+  :root[data-theme="light"] {
+    --paper: #EAECEF; --panel: #F5F6F8; --line: #C9CDD3; --text: #14161A; --dim: #6A7079;
+    --good: #1E7A6E; --miss: #B02E2E;
+  }
+  :root[data-theme="dark"] {
+    --paper: #101215; --panel: #191C21; --line: #333944; --text: #E7EAEE;
+    --dim: #8A929D; --good: #45B8A8; --miss: #E56B6B;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--text); font-family: var(--display); -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 24px 20px 60px; display: flex; flex-direction: column; gap: 18px; }
+
+  h1 { font-size: clamp(24px, 4vw, 34px); font-weight: 700; letter-spacing: -0.03em; line-height: 1; margin: 0; }
+  .sub { color: var(--dim); font-size: 14px; max-width: 62ch; line-height: 1.5; margin: 6px 0 0; }
+
+  .prompt {
+    display: grid; grid-template-columns: 1fr auto; align-items: baseline; row-gap: 8px; column-gap: 16px;
+    padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  }
+  .round { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+  .stats { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 14px; color: var(--dim); }
+  .stats b { color: var(--text); font-weight: 500; }
+  /* Two lines reserved: station names run long and the bullets must not shift. */
+  .stop { grid-column: 1 / -1; font-size: clamp(21px, 3.4vw, 32px); font-weight: 700; letter-spacing: -0.02em;
+          line-height: 1.15; min-height: 2.3em; text-wrap: balance; }
+  .stop .where { display: block; font-size: 13px; font-weight: 600; letter-spacing: 0.12em;
+                 text-transform: uppercase; color: var(--dim); margin-top: 8px; }
+
+  .picks { display: flex; flex-wrap: wrap; gap: 10px; }
+  .pick {
+    width: 48px; height: 48px; border-radius: 50%; border: 2px solid transparent;
+    display: grid; place-items: center; cursor: pointer; padding: 0;
+    font: 700 22px/1 var(--display); color: #fff; background: var(--bc);
+    opacity: 0.34; transition: opacity 0.12s, transform 0.12s;
+  }
+  .pick.dark { color: #14161A; }
+  .pick:hover { opacity: 0.7; }
+  .pick[aria-pressed="true"] { opacity: 1; transform: scale(1.06); }
+  .pick:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
+  .pick.reveal { opacity: 1; border-color: var(--text); }
+  .picks.locked .pick { cursor: default; }
+
+  .result { min-height: 46px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 15px; }
+  .verdict { font-weight: 700; }
+  .verdict.good { color: var(--good); }
+  .verdict.bad { color: var(--miss); }
+  .detail { color: var(--dim); font-family: var(--mono); font-size: 13px; }
+
+  button.act {
+    font: 600 11px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text); background: transparent; border: 1px solid var(--line);
+    border-radius: 2px; padding: 12px 15px; cursor: pointer;
+  }
+  button.act:hover { border-color: var(--text); }
+  button.act:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+  button.act:disabled { opacity: 0.4; cursor: default; }
+  button.act[hidden] { display: none; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Which Train?</h1>
+    <p class="sub">A station, and the whole alphabet of trains. Pick every line that stops there — no map, no hints. 20 rounds.</p>
+  </header>
+
+  <div class="prompt">
+    <span class="round" id="round">Round 1</span>
+    <span class="stop" id="stop">Loading…<span class="where" id="where"></span></span>
+    <span class="stats"><b id="hits">0</b> right</span>
+  </div>
+
+  <div class="picks" id="picks"></div>
+
+  <div class="result">
+    <button class="act" id="check" disabled>Check</button>
+    <span class="verdict" id="verdict"></span>
+    <span class="detail" id="detail"></span>
+    <button class="act" id="next" hidden>Next</button>
+  </div>
+</div>
+
+<script>
+const SUBWAY = /*SUBWAY*/;
+const ROUNDS = 20;
+
+const COLOR = {
+  1: "#EE352E", 2: "#EE352E", 3: "#EE352E",
+  4: "#00933C", 5: "#00933C", 6: "#00933C",
+  7: "#B933AD",
+  A: "#0039A6", C: "#0039A6", E: "#0039A6",
+  B: "#FF6319", D: "#FF6319", F: "#FF6319", M: "#FF6319",
+  G: "#6CBE45", J: "#996633", Z: "#996633",
+  L: "#A7A9AC", S: "#808183",
+  N: "#FCCC0A", Q: "#FCCC0A", R: "#FCCC0A", W: "#FCCC0A",
+};
+const DARK_TYPE = new Set(["N", "Q", "R", "W", "L"]);
+const BOROUGH = { M: "Manhattan", Bk: "Brooklyn", Q: "Queens", Bx: "The Bronx", SI: "Staten Island" };
+
+const IDS = SUBWAY.routes.map(r => r.r);
+// Same cut as the map quiz: a stop with three or more lines is a memory test of
+// the interchange, not of the line. Two is the interesting case.
+const STOPS = SUBWAY.stations.filter(s => s.r.length <= 2);
+
+const el = id => document.getElementById(id);
+const same = (a, b) => a.length === b.length && a.every(x => b.includes(x));
+
+// "145 St" in Manhattan is four different stations (A+C, B+D, 1, and 3) and the
+// prompt can't tell you which one is meant. Rather than drop those, every reading
+// of a name counts: answer with any one station's set and you're right.
+const KEY = s => `${s.n}|${s.b}`;
+const setKey = ids => [...ids].sort().join("+");
+const VALID = new Map();
+for (const s of STOPS) {
+  const k = KEY(s);
+  const seen = VALID.get(k) || VALID.set(k, []).get(k);
+  const sk = setKey(s.r);
+  if (!seen.includes(sk)) seen.push(sk);
+}
+const validFor = stop => VALID.get(KEY(stop));
+
+let order = [], round = 0, hits = 0, target = null, chosen = new Set(), locked = false;
+const buttons = new Map();
+
+for (const id of IDS) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "pick" + (DARK_TYPE.has(id) ? " dark" : "");
+  b.style.setProperty("--bc", COLOR[id] || "#6A7079");
+  b.textContent = id;
+  b.setAttribute("aria-pressed", "false");
+  b.setAttribute("aria-label", `Line ${id}`);
+  b.addEventListener("click", () => toggle(id));
+  el("picks").appendChild(b);
+  buttons.set(id, b);
+}
+
+function toggle(id) {
+  if (locked) return;
+  chosen.has(id) ? chosen.delete(id) : chosen.add(id);
+  buttons.get(id).setAttribute("aria-pressed", String(chosen.has(id)));
+  el("check").disabled = chosen.size === 0;
+}
+
+function ask() {
+  if (round >= order.length) return finish();
+  target = order[round];
+  chosen.clear();
+  locked = false;
+  el("picks").classList.remove("locked");
+  for (const b of buttons.values()) { b.setAttribute("aria-pressed", "false"); b.classList.remove("reveal"); }
+  el("round").textContent = `Round ${round + 1} of ${order.length}`;
+  el("stop").firstChild.textContent = target.n;
+  el("where").textContent = BOROUGH[target.b] || "";
+  el("verdict").textContent = "";
+  el("detail").textContent = "";
+  el("check").hidden = false;
+  el("check").disabled = true;
+  el("next").hidden = true;
+}
+
+function check() {
+  if (locked || !chosen.size) return;
+  locked = true;
+  el("picks").classList.add("locked");
+  const options = validFor(target);
+  const got = setKey(chosen);
+  const right = options.includes(got);
+  if (right) hits++;
+  // Reveal every reading, so an ambiguous name teaches you all of them.
+  for (const sk of options) for (const id of sk.split("+")) buttons.get(id).classList.add("reveal");
+
+  const phrase = sk => "the " + sk.split("+").join(" and ");
+  el("verdict").textContent = right ? "Right." : "Not quite.";
+  el("verdict").className = "verdict " + (right ? "good" : "bad");
+  el("detail").textContent = options.length > 1
+    ? `${target.n} is ${options.length} stations — ${options.map(phrase).join(", ")}`
+    : (right ? `${target.n} it is` : `${target.n} is served by ${phrase(options[0])}`);
+  el("hits").textContent = hits;
+  el("check").hidden = true;
+  el("next").hidden = false;
+  el("next").textContent = round + 1 >= order.length ? "See results" : "Next";
+  el("next").focus();
+}
+
+function finish() {
+  target = null;
+  locked = true;
+  el("round").textContent = "Done";
+  el("stop").firstChild.textContent = `${hits} of ${order.length} right`;
+  el("where").textContent = "";
+  el("verdict").textContent = "";
+  el("detail").textContent = hits === order.length ? "perfect run" : "";
+  el("check").hidden = true;
+  el("next").hidden = false;
+  el("next").textContent = "Play again";
+}
+
+function restart() {
+  order = STOPS.map(s => s).sort(() => Math.random() - 0.5).slice(0, ROUNDS);
+  round = 0; hits = 0;
+  el("hits").textContent = "0";
+  ask();
+}
+
+el("check").addEventListener("click", check);
+el("next").addEventListener("click", () => {
+  if (round + 1 > order.length || !target) return restart();
+  round++; ask();
+});
+
+// Typing a line's own character toggles it; Enter checks. Faster than hunting bullets.
+addEventListener("keydown", e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  if (/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;
+  const k = e.key.toUpperCase();
+  if (buttons.has(k)) { toggle(k); e.preventDefault(); return; }
+  if (e.key === "Enter" && !locked) { check(); e.preventDefault(); }
+});
+
+restart();
+
+// ---- self-checks
+console.assert(IDS.length >= 20, "routes loaded");
+console.assert(IDS.every(id => COLOR[id]), "every bullet has a colour");
+console.assert(STOPS.length > 100, "enough one- and two-line stops");
+console.assert(order.length === ROUNDS, "a full round list");
+console.assert(order.every(s => s.r.every(id => buttons.has(id))), "every answer is reachable from the bullets");
+// The exact-set rule is the whole scoring model; make sure it isn't order-sensitive.
+console.assert(same(["A", "C"], ["C", "A"]) && !same(["A"], ["A", "C"]), "answer matching ignores order but not count");
+// Every stop must be answerable by its own lines, including the ambiguous names.
+console.assert(STOPS.every(s => validFor(s).includes(setKey(s.r))), "each station's own set is an accepted answer");
+console.assert([...VALID.values()].some(v => v.length > 1), "shared station names keep all their readings");
+</script>

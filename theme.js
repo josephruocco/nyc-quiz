@@ -1,7 +1,7 @@
-// Light/dark switch, appended to every built page. Every page already styles
-// :root[data-theme="light"|"dark"], so this only has to set the attribute and
-// remember the choice. With nothing chosen the pages follow the OS, and the
-// button matching the OS starts pressed.
+// Shared page chrome, appended to every built page: a home link back to the menu
+// and the light/dark switch. Every page already styles :root[data-theme=…], so the
+// switch only has to set the attribute and remember the choice. With nothing chosen
+// the pages follow the OS, and the button matching the OS starts pressed.
 (() => {
   const KEY = "nyc-quiz-theme";
   const root = document.documentElement;
@@ -17,7 +17,15 @@
 
   const style = document.createElement("style");
   style.textContent = `
-    .theme-pick { position: fixed; top: 12px; right: 12px; z-index: 5; display: flex; gap: 6px; }
+    .theme-pick { position: fixed; top: 12px; right: 12px; z-index: 5; display: flex; gap: 6px; align-items: stretch; }
+    .theme-pick a.home {
+      display: grid; place-items: center; text-decoration: none;
+      font: 600 10px/1 var(--display, sans-serif); letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--dim); background: var(--panel); border: 1px solid var(--line);
+      border-radius: 2px; padding: 8px 10px; margin-right: 4px;
+    }
+    .theme-pick a.home:hover { color: var(--text); border-color: var(--text); }
+    .theme-pick a.home:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
     .theme-pick button {
       font: 600 10px/1 var(--display, sans-serif); letter-spacing: 0.1em; text-transform: uppercase;
       color: var(--dim); background: var(--panel); border: 1px solid var(--line);
@@ -32,8 +40,16 @@
 
   const box = document.createElement("div");
   box.className = "theme-pick";
-  box.setAttribute("role", "group");
-  box.setAttribute("aria-label", "Colour theme");
+
+  // Every page but the menu itself gets a way back to the menu.
+  const onMenu = /(^\/?|\/)(index\.html)?$/.test(location.pathname);
+  if (!onMenu) {
+    const home = document.createElement("a");
+    home.className = "home";
+    home.href = "index.html";
+    home.textContent = "← Menu";
+    box.appendChild(home);
+  }
 
   const buttons = ["light", "dark"].map(mode => {
     const b = document.createElement("button");
@@ -65,4 +81,5 @@
     "exactly one theme reads as active");
   // A saved choice must survive the reload that brought us here.
   console.assert(!saved || root.dataset.theme === saved, "the saved theme is applied on load");
+  console.assert(onMenu === !box.querySelector("a.home"), "every page but the menu has a way home");
 })();
