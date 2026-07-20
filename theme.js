@@ -39,6 +39,9 @@
       max-width: 1080px; margin: 0 auto; padding: 0 20px 32px;
       font-family: var(--mono, monospace); font-size: 12px; color: var(--dim);
     }
+    .site-credit a { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--line); }
+    .site-credit a:hover { border-bottom-color: var(--text); }
+    .site-credit a:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
   `;
   document.head.appendChild(style);
 
@@ -82,7 +85,11 @@
   // Byline, appended after the switch so it really is the last thing on the page.
   const credit = document.createElement("footer");
   credit.className = "site-credit";
-  credit.textContent = "Created by Joseph Ruocco";
+  credit.append("Created by ");
+  const me = document.createElement("a");
+  me.href = "https://josephruocco.net";
+  me.textContent = "Joseph Ruocco";
+  credit.appendChild(me);
   document.body.appendChild(credit);
 
   // self-check
@@ -92,5 +99,10 @@
   // A saved choice must survive the reload that brought us here.
   console.assert(!saved || root.dataset.theme === saved, "the saved theme is applied on load");
   console.assert(onMenu === !box.querySelector("a.home"), "every page but the menu has a way home");
-  console.assert(document.body.lastElementChild === credit, "the byline sits at the bottom of the page");
+  // Not "is it the last node" — the penguin page appends a <script> after this one,
+  // and script tags don't render. What matters is that it sits below the content.
+  const main = document.querySelector(".wrap") || document.body.firstElementChild;
+  console.assert(!main || credit.getBoundingClientRect().top >= main.getBoundingClientRect().bottom - 1,
+    "the byline renders below the page content");
+  console.assert(me.href === "https://josephruocco.net/", "the byline links out");
 })();

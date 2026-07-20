@@ -242,7 +242,7 @@ function ask() {
   guess = null; answered = false;
   cv.classList.remove("done");
   document.documentElement.style.setProperty("--c", `var(${COLOR[target.b]})`);
-  el("boro").textContent = `Round ${round + 1} of ${order.length} &middot; ${target.b}`;
+  el("boro").textContent = `Round ${round + 1} of ${order.length} · ${target.b}`;
   el("target").textContent = target.n;
   el("verdict").textContent = ""; el("detail").textContent = "";
   el("next").hidden = true;
