@@ -26,7 +26,17 @@ node build.js          # -> dist/
 `build.js` inlines the data blobs into each `*.template.html` (`/*DATA*/` →
 `map_data.json`, `/*SUBWAY*/` → `subway_data.json`; the subway page uses both,
 drawing the neighborhoods as a faint backdrop), copies the static pages through,
-and appends `theme.js` to every page plus `penguin.js` to one.
+and appends `theme.js` to every page.
+
+The penguin easter egg is **left out by default**, so `node build.js` is the
+public build. To include him:
+
+```sh
+PENGUIN=1 node build.js
+```
+
+The build fails rather than shipping the wrong thing: it exits non-zero if the
+egg is missing from a `PENGUIN=1` build, or present anywhere in a public one.
 
 To regenerate the geometry from scratch:
 
