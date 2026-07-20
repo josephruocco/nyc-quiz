@@ -1,0 +1,266 @@
+<meta charset="utf-8">
+<title>Name Every Neighborhood</title>
+<style>
+  :root {
+    --paper: #EAECEF;
+    --panel: #F5F6F8;
+    --line: #C9CDD3;
+    --text: #14161A;
+    --dim: #6A7079;
+    --slot: #D5D9DE;
+    --mn: #B65A1F;
+    --bk: #1E7A6E;
+    --qn: #4A5CB8;
+    --bx: #A83A62;
+    --miss: #B02E2E;
+    --display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #101215;
+      --panel: #191C21;
+      --line: #2C313A;
+      --text: #E7EAEE;
+      --dim: #8A929D;
+      --slot: #262B33;
+      --mn: #E8934F;
+      --bk: #45B8A8;
+      --qn: #8B9BEA;
+      --bx: #E27BA0;
+      --miss: #E56B6B;
+    }
+  }
+  :root[data-theme="light"] {
+    --paper: #EAECEF; --panel: #F5F6F8; --line: #C9CDD3; --text: #14161A;
+    --dim: #6A7079; --slot: #D5D9DE;
+    --mn: #B65A1F; --bk: #1E7A6E; --qn: #4A5CB8; --bx: #A83A62; --miss: #B02E2E;
+  }
+  :root[data-theme="dark"] {
+    --paper: #101215; --panel: #191C21; --line: #2C313A; --text: #E7EAEE;
+    --dim: #8A929D; --slot: #262B33;
+    --mn: #E8934F; --bk: #45B8A8; --qn: #8B9BEA; --bx: #E27BA0; --miss: #E56B6B;
+  }
+
+  body {
+    background: var(--paper);
+    color: var(--text);
+    font-family: var(--display);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  header { display: flex; flex-direction: column; gap: 6px; margin-bottom: 22px; }
+  h1 {
+    font-size: clamp(28px, 5vw, 46px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    text-wrap: balance;
+  }
+  .sub { color: var(--dim); font-size: 14px; max-width: 62ch; line-height: 1.5; }
+
+  .bar {
+    position: sticky; top: 0; z-index: 5;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+    background: var(--paper);
+    padding: 12px 0 14px;
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 22px;
+  }
+  #guess {
+    flex: 1 1 260px; min-width: 0;
+    font: 500 17px/1 var(--display);
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    padding: 13px 14px;
+  }
+  #guess:focus { outline: 2px solid var(--text); outline-offset: 1px; }
+  #guess::placeholder { color: var(--dim); }
+
+  .score {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 20px; letter-spacing: -0.02em;
+  }
+  .score small { color: var(--dim); font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; }
+  #clock { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--dim); font-size: 15px; }
+
+  button {
+    font: 600 12px/1 var(--display);
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text); background: transparent;
+    border: 1px solid var(--line); border-radius: 2px;
+    padding: 12px 14px; cursor: pointer;
+  }
+  button:hover { border-color: var(--text); }
+  button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+  .flash {
+    min-height: 18px; font-size: 13px; color: var(--dim);
+    margin: -10px 0 18px; font-family: var(--mono);
+  }
+  .flash.hit { color: var(--text); }
+
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 22px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+
+  .col { display: flex; flex-direction: column; gap: 10px; }
+  .col h2 {
+    font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em;
+    padding-bottom: 8px; border-bottom: 2px solid var(--c);
+    display: flex; justify-content: space-between; align-items: baseline;
+    color: var(--c);
+  }
+  .col h2 span { font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: 0; color: var(--dim); font-weight: 400; }
+  ul { list-style: none; display: flex; flex-direction: column; gap: 3px; }
+  li {
+    font-size: 13.5px; line-height: 1.35;
+    padding: 4px 0 4px 9px;
+    border-left: 2px solid var(--slot);
+    color: transparent;
+    min-height: 22px;
+  }
+  li.got { color: var(--text); border-left-color: var(--c); }
+  li.shown { color: var(--miss); border-left-color: var(--miss); }
+  li.got { animation: in 260ms ease-out; }
+  @keyframes in { from { opacity: 0; transform: translateX(-4px); } }
+  @media (prefers-reduced-motion: reduce) { li.got { animation: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Name Every Neighborhood</h1>
+    <p class="sub">Four boroughs, 220 neighborhoods. Type a name and it fills in. Abbreviations work: bed stuy, LIC, UWS, FiDi, Co-op City.</p>
+  </header>
+
+  <div class="bar">
+    <input id="guess" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type a neighborhood…" aria-label="Type a neighborhood name">
+    <div class="score"><span id="found">0</span>/<span id="total">0</span> <small>found</small></div>
+    <div id="clock">0:00</div>
+    <button id="give">Give up</button>
+  </div>
+
+  <div class="flash" id="flash"></div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<script>
+const BOROUGHS = [
+  ["Manhattan", "--mn", ["Marble Hill","Inwood","Washington Heights","Hudson Heights","Hamilton Heights","Manhattanville","Morningside Heights","Central Harlem","East Harlem","Upper West Side","Lincoln Square","Upper East Side","Lenox Hill","Yorkville","Carnegie Hill","Roosevelt Island","Hell's Kitchen","Midtown","Times Square","Theater District","Koreatown","Hudson Yards","Turtle Bay","Sutton Place","Tudor City","Murray Hill","Kips Bay","NoMad","Gramercy","Stuyvesant Town","Flatiron District","Union Square","Chelsea","Meatpacking District","Greenwich Village","West Village","East Village","Alphabet City","NoHo","SoHo","Nolita","Bowery","Little Italy","Chinatown","Lower East Side","Two Bridges","Tribeca","Civic Center","Financial District","Battery Park City"]],
+  ["Brooklyn", "--bk", ["Greenpoint","Williamsburg","East Williamsburg","Bushwick","Bedford-Stuyvesant","Ocean Hill","Brownsville","East New York","Cypress Hills","Canarsie","Starrett City","Bergen Beach","Mill Basin","Marine Park","Sheepshead Bay","Manhattan Beach","Brighton Beach","Coney Island","Sea Gate","Gravesend","Bath Beach","Bensonhurst","Dyker Heights","Fort Hamilton","Bay Ridge","Sunset Park","Borough Park","Kensington","Windsor Terrace","Greenwood","Park Slope","Gowanus","Prospect Heights","Prospect Lefferts Gardens","Crown Heights","Flatbush","Ditmas Park","East Flatbush","Midwood","Carroll Gardens","Cobble Hill","Boerum Hill","Red Hook","Downtown Brooklyn","Brooklyn Heights","DUMBO","Vinegar Hill","Navy Yard","Fort Greene","Clinton Hill"]],
+  ["Queens", "--qn", ["Astoria","Ditmars Steinway","Long Island City","Hunters Point","Sunnyside","Blissville","Woodside","Jackson Heights","East Elmhurst","Elmhurst","Corona","Willets Point","Flushing","Murray Hill","College Point","Whitestone","Beechhurst","Malba","Bay Terrace","Auburndale","Bayside","Oakland Gardens","Douglaston","Little Neck","Glen Oaks","Bellerose","Floral Park","Queens Village","Hollis","Holliswood","Jamaica Estates","Fresh Meadows","Kew Gardens Hills","Pomonok","Hillcrest","Briarwood","Jamaica","South Jamaica","St. Albans","Cambria Heights","Laurelton","Rosedale","Springfield Gardens","Howard Beach","Lindenwood","Ozone Park","South Ozone Park","Richmond Hill","Woodhaven","Kew Gardens","Forest Hills","Rego Park","Middle Village","Glendale","Ridgewood","Maspeth","Far Rockaway","Arverne","Edgemere","Rockaway Beach","Rockaway Park","Belle Harbor","Neponsit","Breezy Point","Broad Channel"]],
+  ["The Bronx", "--bx", ["Mott Haven","Port Morris","Melrose","Hunts Point","Longwood","Foxhurst","Morrisania","Claremont","Crotona Park East","West Farms","Concourse","Highbridge","Morris Heights","University Heights","Mount Eden","Mount Hope","Tremont","Bathgate","Belmont","Fordham","Bedford Park","Norwood","Kingsbridge","Kingsbridge Heights","Riverdale","North Riverdale","Fieldston","Spuyten Duyvil","Woodlawn","Wakefield","Williamsbridge","Olinville","Edenwald","Baychester","Co-op City","Eastchester","Allerton","Bronxdale","Pelham Parkway","Pelham Gardens","Morris Park","Van Nest","Parkchester","Westchester Square","Throgs Neck","Locust Point","Silver Beach","Country Club","Pelham Bay","City Island","Castle Hill","Unionport","Soundview","Clason Point","Schuylerville"]]
+];
+
+const ALIASES = {
+  "bedstuy": "bedford-stuyvesant", "bedfordstuy": "bedford-stuyvesant",
+  "uws": "upper west side", "ues": "upper east side", "les": "lower east side",
+  "lic": "long island city", "fidi": "financial district", "bpc": "battery park city",
+  "flatiron": "flatiron district", "meatpacking": "meatpacking district",
+  "hellskitchen": "hell's kitchen",
+  "ktown": "koreatown", "stuytown": "stuyvesant town", "petercooper": "stuyvesant town",
+  "prospectlefferts": "prospect lefferts gardens", "plg": "prospect lefferts gardens",
+  "greenwoodheights": "greenwood", "southslope": "greenwood",
+  "brooklynnavyyard": "navy yard", "bkheights": "brooklyn heights",
+  "ditmars": "ditmars steinway", "steinway": "ditmars steinway",
+  "coopercity": "co-op city", "throggsneck": "throgs neck",
+  "saintalbans": "st. albans", "harlem": "central harlem",
+  "morningside": "morningside heights", "washheights": "washington heights",
+  "midtowneast": "turtle bay", "midtownwest": "hell's kitchen",
+  "therockaways": "rockaway beach", "rockaways": "rockaway beach"
+};
+
+const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+const slots = [];  // {norm, el}
+const grid = document.getElementById("grid");
+let total = 0, found = 0, over = false;
+
+for (const [name, cvar, list] of BOROUGHS) {
+  const col = document.createElement("div");
+  col.className = "col";
+  col.style.setProperty("--c", `var(${cvar})`);
+  const h = document.createElement("h2");
+  h.innerHTML = `${name} <span>0/${list.length}</span>`;
+  const ul = document.createElement("ul");
+  const counter = h.querySelector("span");
+  for (const hood of list) {
+    const li = document.createElement("li");
+    li.textContent = hood;
+    ul.appendChild(li);
+    slots.push({ key: norm(hood), el: li, counter, list });
+    total++;
+  }
+  col.append(h, ul);
+  grid.appendChild(col);
+}
+document.getElementById("total").textContent = total;
+
+const input = document.getElementById("guess");
+const flash = document.getElementById("flash");
+const foundEl = document.getElementById("found");
+
+let start = null, tick = null;
+function startClock() {
+  if (tick) return;
+  start = Date.now();
+  const clock = document.getElementById("clock");
+  tick = setInterval(() => {
+    const s = Math.floor((Date.now() - start) / 1000);
+    clock.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+  }, 1000);
+}
+
+function bump(counter) {
+  const [a, b] = counter.textContent.split("/");
+  counter.textContent = `${+a + 1}/${b}`;
+}
+
+input.addEventListener("input", () => {
+  if (over) return;
+  const raw = input.value.trim();
+  if (!raw) return;
+  startClock();
+  const key = norm(ALIASES[norm(raw)] || raw);
+  // ponytail: linear scan over ~200 slots per keystroke, fine at this size
+  const hits = slots.filter(s => s.key === key && !s.el.classList.contains("got"));
+  if (!hits.length) return;
+  for (const s of hits) {
+    s.el.classList.add("got");
+    bump(s.counter);
+    found++;
+  }
+  foundEl.textContent = found;
+  flash.textContent = hits.length > 1
+    ? `${hits[0].el.textContent} — counted in ${hits.length} boroughs`
+    : hits[0].el.textContent;
+  flash.className = "flash hit";
+  input.value = "";
+  if (found === total) {
+    clearInterval(tick);
+    flash.textContent = `All ${total} in ${document.getElementById("clock").textContent}.`;
+    over = true;
+  }
+});
+
+document.getElementById("give").addEventListener("click", () => {
+  if (over) return;
+  over = true;
+  clearInterval(tick);
+  for (const s of slots) if (!s.el.classList.contains("got")) s.el.classList.add("shown");
+  flash.textContent = `Stopped at ${found}/${total}. Misses in red.`;
+  flash.className = "flash";
+  input.disabled = true;
+});
+
+input.focus();
+
+// self-check
+console.assert(norm("Bed-Stuy") === "bedstuy", "norm strips punctuation");
+console.assert(slots.filter(s => s.key === "murrayhill").length === 2, "Murray Hill exists in two boroughs");
+console.assert(new Set(slots.map(s => s.el.textContent)).size === slots.length - 1, "Murray Hill is the only duplicate name");
+console.assert(total === 220, "220 neighborhoods");
+</script>

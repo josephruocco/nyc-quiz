@@ -1,0 +1,6 @@
+dist/
+.claude/
+
+# 4.5MB source extract; re-fetch with the curl in the README. map_data.json is the
+# committed artifact, since Netlify's build needs it and it's 10x smaller.
+nta.geojson

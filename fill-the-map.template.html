@@ -1,0 +1,561 @@
+<meta charset="utf-8">
+<title>Fill In the Map</title>
+<style>
+  :root {
+    --paper: #EAECEF;
+    --panel: #F5F6F8;
+    --line: #C9CDD3;
+    --text: #14161A;
+    --dim: #6A7079;
+    --water: #DFE3E8;
+    --blank: #E2E5E9;
+    --mn: #B65A1F;
+    --bk: #1E7A6E;
+    --qn: #4A5CB8;
+    --bx: #A83A62;
+    --display: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #101215; --panel: #191C21; --line: #333944; --text: #E7EAEE;
+      --dim: #8A929D; --water: #15181C; --blank: #22262D;
+      --mn: #E8934F; --bk: #45B8A8; --qn: #8B9BEA; --bx: #E27BA0;
+    }
+  }
+  :root[data-theme="light"] {
+    --paper: #EAECEF; --panel: #F5F6F8; --line: #C9CDD3; --text: #14161A;
+    --dim: #6A7079; --water: #DFE3E8; --blank: #E2E5E9;
+    --mn: #B65A1F; --bk: #1E7A6E; --qn: #4A5CB8; --bx: #A83A62;
+  }
+  :root[data-theme="dark"] {
+    --paper: #101215; --panel: #191C21; --line: #333944; --text: #E7EAEE;
+    --dim: #8A929D; --water: #15181C; --blank: #22262D;
+    --mn: #E8934F; --bk: #45B8A8; --qn: #8B9BEA; --bx: #E27BA0;
+  }
+
+  body { background: var(--paper); color: var(--text); font-family: var(--display); -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 60px; display: flex; flex-direction: column; gap: 16px; }
+
+  h1 { font-size: clamp(24px, 4vw, 36px); font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+  .sub { color: var(--dim); font-size: 14px; max-width: 64ch; line-height: 1.5; margin-top: 6px; }
+
+  .bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  #guess {
+    flex: 1 1 240px; min-width: 0;
+    font: 500 17px/1 var(--display); color: var(--text);
+    background: var(--panel); border: 1px solid var(--line); border-radius: 2px; padding: 13px 14px;
+  }
+  #guess:focus { outline: 2px solid var(--text); outline-offset: 1px; }
+  #guess::placeholder { color: var(--dim); }
+  #guess:disabled { opacity: 0.5; }
+  .score { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 19px; }
+  .score small { color: var(--dim); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  button {
+    font: 600 11px/1 var(--display); letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--text); background: transparent; border: 1px solid var(--line);
+    border-radius: 2px; padding: 11px 13px; cursor: pointer;
+  }
+  button:hover { border-color: var(--text); }
+  button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+  button[aria-pressed="true"] { background: var(--text); color: var(--paper); border-color: var(--text); }
+
+  .opts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .opts .spacer { flex: 1; }
+  .zoomlvl { font-family: var(--mono); font-size: 12px; color: var(--dim); min-width: 3.4em; text-align: right; }
+
+  /* Fixed height: the prompt swaps between modes and must not shove the map around. */
+  .prompt {
+    display: flex; align-items: center; gap: 12px; min-height: 46px;
+    padding: 10px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    font-size: 15px; color: var(--dim);
+  }
+  .prompt b { font-size: clamp(17px, 2.4vw, 22px); font-weight: 700; letter-spacing: -0.02em; color: var(--c, var(--text)); }
+
+  .stage { position: relative; }
+  canvas { display: block; width: 100%; border: 1px solid var(--line); background: var(--water); cursor: grab; touch-action: none; }
+  canvas.dragging { cursor: grabbing; }
+
+  .tallies { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  @media (max-width: 620px) { .tallies { grid-template-columns: repeat(2, 1fr); } }
+  .tally { border-top: 2px solid var(--c); padding-top: 7px; }
+  .tally .b { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--c); }
+  .tally .n { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 15px; color: var(--dim); }
+
+  .flash { min-height: 20px; font-family: var(--mono); font-size: 13px; color: var(--dim); }
+  .flash.hit { color: var(--text); }
+
+  .clock { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 19px; }
+  .clock.low { color: var(--bx); }
+
+  /* Start screen sits in the normal flow and swaps with the game — no overlay,
+     so the map never lays out against a zero-width canvas. */
+  #game[hidden] { display: none; }
+  .setup { display: flex; flex-direction: column; gap: 22px; padding: 8px 0; }
+  .setup[hidden] { display: none; }
+  .setup fieldset { border: 0; display: flex; flex-direction: column; gap: 10px; }
+  .setup legend { font: 600 11px/1 var(--display); letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); padding: 0 0 10px; }
+  .choices { display: flex; flex-wrap: wrap; gap: 8px; }
+  .choices button { padding: 12px 15px; }
+  .choices button[data-boro] { border-left: 3px solid var(--c, var(--line)); }
+  #startBtn { align-self: flex-start; font-size: 13px; padding: 15px 26px; background: var(--text); color: var(--paper); border-color: var(--text); }
+  #startBtn:hover { opacity: 0.85; }
+  .setup .note { color: var(--dim); font-size: 13px; font-family: var(--mono); }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Fill In the Map</h1>
+    <p class="sub">Type a neighborhood and it paints itself onto the city. Scroll or pinch to zoom, drag to pan. 181 neighborhoods across four boroughs.</p>
+  </header>
+
+  <form class="setup" id="setup">
+    <fieldset>
+      <legend>Which boroughs</legend>
+      <div class="choices" id="boroChoices">
+        <button type="button" data-boro="all" aria-pressed="true">All four</button>
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend>Clock</legend>
+      <div class="choices">
+        <button type="button" id="untimed" aria-pressed="true">Untimed</button>
+        <button type="button" id="timed" aria-pressed="false">Timed</button>
+      </div>
+      <p class="note" id="setupNote"></p>
+    </fieldset>
+    <button type="submit" id="startBtn">Start quiz</button>
+  </form>
+
+<div id="game" hidden>
+  <div class="prompt" id="prompt"><span id="promptText">Free play — name them in any order.</span></div>
+
+  <div class="bar">
+    <input id="guess" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type a neighborhood…" aria-label="Type a neighborhood name">
+    <div class="score"><span id="found">0</span>/<span id="total">0</span> <small>filled</small></div>
+    <div class="clock" id="clock" hidden aria-label="Time remaining"></div>
+    <button id="skip" hidden>Skip</button>
+    <button id="reveal">Give up</button>
+    <button id="again" hidden>New quiz</button>
+  </div>
+
+  <div class="flash" id="flash"></div>
+
+  <div class="opts">
+    <button id="mode" aria-pressed="false">One at a time</button>
+    <button id="lines" aria-pressed="true">Boundaries</button>
+    <button id="labels" aria-pressed="true">Labels</button>
+    <span class="spacer"></span>
+    <button id="zoomOut" aria-label="Zoom out">&minus;</button>
+    <span class="zoomlvl" id="zoomlvl">1.0&times;</span>
+    <button id="zoomIn" aria-label="Zoom in">+</button>
+    <button id="reset">Reset view</button>
+  </div>
+
+  <div class="stage"><canvas id="map" aria-label="Map of NYC neighborhoods, filled in as you name them"></canvas></div>
+
+  <div class="tallies" id="tallies"></div>
+</div>
+</div>
+
+<script>
+const ALL = /*DATA*/;
+const COLOR = { "Manhattan": "--mn", "Brooklyn": "--bk", "Queens": "--qn", "The Bronx": "--bx" };
+const BOROS = ["Manhattan", "Brooklyn", "Queens", "The Bronx"];
+const FULL_SECONDS = 15 * 60;   // 15:00 for the whole city; a subset gets its share
+
+let HOODS = ALL;   // the neighborhoods in play, set at Start
+
+const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+// NTA names are composites ("Marine Park-Mill Basin-Bergen Beach"), which nobody
+// will type in full. Accept the whole name, the name without its parenthetical,
+// any hyphen-separated part, and any adjacent pair of parts (so "Bedford-Stuyvesant"
+// works as well as "Bedford"). An ambiguous guess fills every match, same as a
+// name that genuinely exists in two boroughs.
+function buildIndex(list) {
+  const index = new Map();
+  const addKey = (k, h) => { if (!k) return; const l = index.get(k) || []; if (!l.includes(h)) l.push(h); index.set(k, l); };
+  for (const h of list) {
+    const bare = h.n.replace(/\s*\([^)]*\)/g, "").trim();
+    addKey(norm(h.n), h);
+    addKey(norm(bare), h);
+    const parts = bare.split("-").map(s => s.trim()).filter(Boolean);
+    parts.forEach((p, i) => {
+      addKey(norm(p), h);
+      if (i + 1 < parts.length) addKey(norm(p + parts[i + 1]), h);
+    });
+  }
+  return index;
+}
+let INDEX = buildIndex(ALL);
+const ALIASES = {
+  bedstuy: "bedford-stuyvesant", lic: "long island city", uws: "upper west side",
+  ues: "upper east side", les: "lower east side", fidi: "financial district",
+  stuytown: "stuyvesant town", plg: "prospect lefferts gardens", coopcity: "co-op city"
+};
+
+const cv = document.getElementById("map");
+const ctx = cv.getContext("2d");
+const el = id => document.getElementById(id);
+const cssVar = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+let minX, maxX, minY, maxY, KX;
+function fitBounds() {
+  minX = 180; maxX = -180; minY = 90; maxY = -90;
+  for (const h of HOODS) for (const r of h.p) for (const [x, y] of r) {
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+  }
+  KX = Math.cos((minY + maxY) / 2 * Math.PI / 180);
+}
+fitBounds();
+
+let base = 1, baseX = 0, baseY = 0;   // fit-to-canvas projection
+let zoom = 1, panX = 0, panY = 0;     // user view on top of it
+let lastW = 0;
+
+function layout() {
+  const w = cv.clientWidth;
+  lastW = w;
+  const h = Math.round(Math.min(w * 0.78, innerHeight * 0.7));
+  const dpr = devicePixelRatio || 1;
+  cv.width = w * dpr; cv.height = h * dpr;
+  cv.style.height = h + "px";
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const pad = 10;
+  base = Math.min((w - pad * 2) / ((maxX - minX) * KX), (h - pad * 2) / (maxY - minY));
+  baseX = (w - (maxX - minX) * KX * base) / 2;
+  baseY = (h - (maxY - minY) * base) / 2;
+  draw();
+}
+const px = ([x, y]) => [
+  (baseX + (x - minX) * KX * base) * zoom + panX,
+  (baseY + (maxY - y) * base) * zoom + panY,
+];
+
+const guessed = new Set();
+let mode = "free", target = null, revealed = false;
+
+function path(rings) {
+  ctx.beginPath();
+  for (const r of rings) {
+    r.forEach((pt, i) => { const [a, b] = px(pt); i ? ctx.lineTo(a, b) : ctx.moveTo(a, b); });
+    ctx.closePath();
+  }
+}
+
+function draw() {
+  const w = cv.clientWidth, h = parseFloat(cv.style.height);
+  ctx.clearRect(0, 0, w, h);
+  const showLines = el("lines").getAttribute("aria-pressed") === "true";
+  const showLabels = el("labels").getAttribute("aria-pressed") === "true";
+  const blank = cssVar("--blank");
+
+  for (const hood of HOODS) {
+    const on = guessed.has(hood);
+    path(hood.p);
+    ctx.fillStyle = on ? cssVar(COLOR[hood.b]) + (hood.missed ? "44" : "cc") : blank;
+    ctx.fill();
+    if (showLines || on) {
+      ctx.strokeStyle = on ? cssVar(COLOR[hood.b]) : cssVar("--line");
+      ctx.lineWidth = on ? 1 : 0.7;
+      ctx.stroke();
+    }
+  }
+
+  if (target && !guessed.has(target)) {          // one-at-a-time: ring the asked shape
+    path(target.p);
+    ctx.strokeStyle = cssVar("--text");
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  if (showLabels && zoom >= 2) {
+    ctx.font = "600 10px " + cssVar("--display");
+    ctx.textAlign = "center";
+    ctx.fillStyle = cssVar("--text");
+    for (const hood of HOODS) {
+      if (!guessed.has(hood)) continue;
+      const [x, y] = px(hood.c);
+      if (x < -40 || y < -20 || x > w + 40 || y > h + 20) continue;
+      ctx.fillText(hood.n.length > 26 ? hood.n.slice(0, 25) + "…" : hood.n, x, y);
+    }
+  }
+  el("zoomlvl").textContent = zoom.toFixed(1) + "×";
+}
+
+// ---- tallies
+const tallyEls = {};
+function buildTallies() {
+  el("tallies").innerHTML = "";
+  const boros = BOROS.filter(b => HOODS.some(h => h.b === b));
+  el("tallies").style.gridTemplateColumns = `repeat(${Math.min(boros.length, 4)}, 1fr)`;
+  for (const b of boros) {
+    const d = document.createElement("div");
+    d.className = "tally";
+    d.style.setProperty("--c", `var(${COLOR[b]})`);
+    d.innerHTML = `<div class="b">${b}</div><div class="n"><span>0</span>/${HOODS.filter(h => h.b === b).length}</div>`;
+    el("tallies").appendChild(d);
+    tallyEls[b] = d.querySelector("span");
+  }
+  el("total").textContent = HOODS.length;
+}
+
+function fill(hoods, missed) {
+  for (const h of hoods) {
+    if (guessed.has(h)) continue;
+    h.missed = !!missed;
+    guessed.add(h);
+    tallyEls[h.b].textContent = +tallyEls[h.b].textContent + 1;
+  }
+  el("found").textContent = [...guessed].filter(h => !h.missed).length;
+}
+
+// ---- guessing
+el("guess").addEventListener("input", () => {
+  if (revealed) return;
+  const raw = el("guess").value.trim();
+  if (!raw) return;
+  const key = norm(ALIASES[norm(raw)] || raw);
+  const hits = (INDEX.get(key) || []).filter(h => !guessed.has(h));
+  if (!hits.length) return;
+  if (mode === "one" && target && !hits.includes(target)) {
+    el("flash").textContent = `${hits[0].n} — but that's not the one being asked`;
+    el("flash").className = "flash";
+    return;
+  }
+  const take = mode === "one" ? [target] : hits;
+  fill(take);
+  el("flash").textContent = take.length > 1 ? `${take.map(h => h.n).join(" + ")}` : take[0].n;
+  el("flash").className = "flash hit";
+  el("guess").value = "";
+  if (guessed.size === HOODS.length) return done();
+  if (mode === "one") ask();
+  draw();
+});
+
+function remaining() { return HOODS.filter(h => !guessed.has(h)); }
+
+function ask() {
+  const left = remaining();
+  if (!left.length) return done();
+  target = left[Math.floor(Math.random() * left.length)];
+  document.documentElement.style.setProperty("--c", `var(${COLOR[target.b]})`);
+  el("promptText").innerHTML = `Name the outlined neighborhood in <b>${target.b}</b>`;
+  // keep it in view if the player is zoomed in somewhere else
+  if (zoom > 1.6) centerOn(target.c);
+  draw();
+}
+
+function finish(message) {
+  revealed = true;
+  target = null;
+  stopClock();
+  el("guess").disabled = true;
+  el("skip").hidden = true;
+  el("reveal").hidden = true;
+  el("again").hidden = false;
+  el("promptText").textContent = message;
+  draw();
+}
+
+function done() {
+  el("flash").textContent = "";
+  finish(`All ${HOODS.length} filled in.` + (deadline ? ` ${fmt(left())} to spare.` : ""));
+}
+
+el("skip").addEventListener("click", () => {
+  if (mode !== "one" || !target) return;
+  const t = target;
+  fill([t], true);
+  el("flash").textContent = `Skipped: ${t.n}`;
+  el("flash").className = "flash";
+  ask();
+});
+
+function giveUp(why) {
+  if (revealed) return;
+  const missed = remaining();
+  fill(missed, true);
+  finish(`${why} — ${missed.length} unnamed. Faded shapes are the ones you missed.`);
+}
+
+el("reveal").addEventListener("click", () => giveUp("Stopped"));
+el("again").addEventListener("click", () => location.reload());
+
+el("mode").addEventListener("click", () => {
+  mode = mode === "free" ? "one" : "free";
+  const on = mode === "one";
+  el("mode").setAttribute("aria-pressed", String(on));
+  el("skip").hidden = !on;
+  if (on) ask();
+  else {
+    target = null;
+    document.documentElement.style.removeProperty("--c");
+    el("promptText").textContent = "Free play — name them in any order.";
+    draw();
+  }
+  el("guess").focus();
+});
+
+for (const id of ["lines", "labels"]) {
+  el(id).addEventListener("click", () => {
+    el(id).setAttribute("aria-pressed", String(el(id).getAttribute("aria-pressed") !== "true"));
+    draw();
+  });
+}
+
+// ---- zoom + pan
+function zoomAt(factor, cxp, cyp) {
+  const next = Math.min(12, Math.max(1, zoom * factor));
+  const k = next / zoom;
+  panX = cxp - (cxp - panX) * k;
+  panY = cyp - (cyp - panY) * k;
+  zoom = next;
+  clampPan();
+  draw();
+}
+function clampPan() {
+  const w = cv.clientWidth, h = parseFloat(cv.style.height);
+  const span = 0.35 * Math.min(w, h);   // never let the city leave the frame entirely
+  panX = Math.min(span, Math.max(w - w * zoom - span, panX));
+  panY = Math.min(span, Math.max(h - h * zoom - span, panY));
+  if (zoom === 1) { panX = 0; panY = 0; }
+}
+function centerOn(lonlat) {
+  const w = cv.clientWidth, h = parseFloat(cv.style.height);
+  const bx = baseX + (lonlat[0] - minX) * KX * base, by = baseY + (maxY - lonlat[1]) * base;
+  panX = w / 2 - bx * zoom;
+  panY = h / 2 - by * zoom;
+  clampPan();
+}
+
+cv.addEventListener("wheel", e => {
+  e.preventDefault();
+  const r = cv.getBoundingClientRect();
+  zoomAt(Math.exp(-e.deltaY * 0.0016), e.clientX - r.left, e.clientY - r.top);
+}, { passive: false });
+
+el("zoomIn").addEventListener("click", () => zoomAt(1.5, cv.clientWidth / 2, parseFloat(cv.style.height) / 2));
+el("zoomOut").addEventListener("click", () => zoomAt(1 / 1.5, cv.clientWidth / 2, parseFloat(cv.style.height) / 2));
+el("reset").addEventListener("click", () => { zoom = 1; panX = panY = 0; draw(); });
+
+let drag = null;
+cv.addEventListener("pointerdown", e => {
+  drag = { x: e.clientX, y: e.clientY, px: panX, py: panY };
+  cv.setPointerCapture(e.pointerId);
+  cv.classList.add("dragging");
+});
+cv.addEventListener("pointermove", e => {
+  if (!drag) return;
+  panX = drag.px + (e.clientX - drag.x);
+  panY = drag.py + (e.clientY - drag.y);
+  clampPan();
+  draw();
+});
+for (const ev of ["pointerup", "pointercancel"])
+  cv.addEventListener(ev, () => { drag = null; cv.classList.remove("dragging"); });
+
+// pinch
+let pinch = null;
+cv.addEventListener("touchmove", e => {
+  if (e.touches.length !== 2) return;
+  e.preventDefault();
+  const [a, b] = e.touches;
+  const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  const r = cv.getBoundingClientRect();
+  if (pinch) zoomAt(d / pinch, (a.clientX + b.clientX) / 2 - r.left, (a.clientY + b.clientY) / 2 - r.top);
+  pinch = d;
+}, { passive: false });
+cv.addEventListener("touchend", () => { pinch = null; });
+
+new ResizeObserver(() => { if (cv.clientWidth !== lastW) layout(); }).observe(cv);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+
+// ---- clock
+// Deadline-based rather than a decrementing counter: a background tab throttles
+// the interval, and only the wall-clock end time survives that.
+let deadline = 0, ticker = 0;
+const fmt = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+const left = () => Math.max(0, Math.round((deadline - performance.now()) / 1000));
+
+function stopClock() { clearInterval(ticker); ticker = 0; }
+
+function startClock(seconds) {
+  deadline = performance.now() + seconds * 1000;
+  el("clock").hidden = false;
+  const tick = () => {
+    const s = left();
+    el("clock").textContent = fmt(s);
+    el("clock").className = "clock" + (s <= 60 ? " low" : "");
+    if (s === 0) { stopClock(); giveUp("Time's up"); }
+  };
+  tick();
+  ticker = setInterval(tick, 250);
+}
+
+// ---- start screen
+// Time budget scales with the pool, so one borough isn't a 15-minute stroll.
+const budget = n => Math.max(60, Math.round(FULL_SECONDS * n / ALL.length / 30) * 30);
+
+let pick = "all", timed = false;
+
+for (const b of BOROS) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.dataset.boro = b;
+  btn.setAttribute("aria-pressed", "false");
+  btn.style.setProperty("--c", `var(${COLOR[b]})`);
+  btn.textContent = `${b} (${ALL.filter(h => h.b === b).length})`;
+  el("boroChoices").appendChild(btn);
+}
+
+const pool = () => pick === "all" ? ALL : ALL.filter(h => h.b === pick);
+
+function refreshSetup() {
+  for (const btn of el("boroChoices").children)
+    btn.setAttribute("aria-pressed", String(btn.dataset.boro === pick));
+  el("timed").setAttribute("aria-pressed", String(timed));
+  el("untimed").setAttribute("aria-pressed", String(!timed));
+  const n = pool().length;
+  el("setupNote").textContent = timed ? `${n} neighborhoods — ${fmt(budget(n))} on the clock` : `${n} neighborhoods, no clock`;
+}
+
+el("boroChoices").addEventListener("click", e => {
+  const btn = e.target.closest("button[data-boro]");
+  if (!btn) return;
+  pick = btn.dataset.boro;
+  refreshSetup();
+});
+el("timed").addEventListener("click", () => { timed = true; refreshSetup(); });
+el("untimed").addEventListener("click", () => { timed = false; refreshSetup(); });
+
+el("setup").addEventListener("submit", e => {
+  e.preventDefault();
+  HOODS = pool();
+  INDEX = buildIndex(HOODS);
+  fitBounds();
+  buildTallies();
+  el("setup").hidden = true;
+  el("game").hidden = false;
+  layout();
+  if (timed) startClock(budget(HOODS.length));
+  el("guess").focus();
+});
+
+refreshSetup();
+
+// self-check
+console.assert(ALL.length === 181, "181 neighborhoods");
+console.assert(INDEX.get(norm("Marine Park")).length === 1, "a partial name resolves");
+console.assert(INDEX.get(norm("Bedford-Stuyvesant")).length >= 1, "compound part resolves");
+console.assert(ALL.every(h => INDEX.get(norm(h.n)).includes(h)), "every full name is indexed");
+console.assert(Object.values(ALIASES).every(v => INDEX.has(norm(v))), "every alias resolves to a real neighborhood");
+console.assert(buildIndex(ALL.filter(h => h.b === "Queens")).has(norm("Astoria")), "a single-borough pool indexes its own hoods");
+console.assert(!buildIndex(ALL.filter(h => h.b === "Queens")).has(norm("Harlem")), "a single-borough pool excludes other boroughs");
+console.assert(fmt(budget(ALL.length)) === "15:00", "full city is 15:00");
+</script>
