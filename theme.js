@@ -34,7 +34,12 @@
     .theme-pick button:hover { color: var(--text); border-color: var(--text); }
     .theme-pick button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
     .theme-pick button[aria-pressed="true"] { background: var(--text); color: var(--paper); border-color: var(--text); }
-    @media (max-width: 480px) { .theme-pick { top: 8px; right: 8px; } }
+    /* On a phone a fixed bar just sits on top of the quiz. Make it absolute so it
+       scrolls away, and give the page room so it doesn't land on the heading. */
+    @media (max-width: 700px) {
+      .theme-pick { position: absolute; top: 8px; right: 8px; }
+      body { padding-top: 42px; }
+    }
     .site-credit {
       max-width: 1080px; margin: 0 auto; padding: 0 20px 32px;
       font-family: var(--mono, monospace); font-size: 12px; color: var(--dim);

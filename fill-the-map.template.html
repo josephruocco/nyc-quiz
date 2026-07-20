@@ -1,4 +1,5 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fill In the Map</title>
 <style>
   :root {
@@ -220,7 +221,9 @@ let lastW = 0;
 function layout() {
   const w = cv.clientWidth;
   lastW = w;
-  const h = Math.round(Math.min(w * 0.78, innerHeight * 0.7));
+  // Portrait phones need a tall box; a width-driven ratio collapses the map to a strip.
+  const narrow = w < 600;
+  const h = Math.round(Math.min(w * (narrow ? 1.2 : 0.78), innerHeight * (narrow ? 0.6 : 0.7)));
   const dpr = devicePixelRatio || 1;
   cv.width = w * dpr; cv.height = h * dpr;
   cv.style.height = h + "px";
@@ -291,10 +294,18 @@ function draw() {
 
 // ---- tallies
 const tallyEls = {};
+// An inline style wins over the media query, so the column count has to come
+// from the width here rather than from CSS.
+let tallyN = 0;
+function tallyCols(n) {
+  tallyN = n || tallyN;
+  const fit = innerWidth < 620 ? 2 : innerWidth < 900 ? 3 : 5;
+  el("tallies").style.gridTemplateColumns = `repeat(${Math.min(tallyN, fit)}, 1fr)`;
+}
 function buildTallies() {
   el("tallies").innerHTML = "";
   const boros = BOROS.filter(b => HOODS.some(h => h.b === b));
-  el("tallies").style.gridTemplateColumns = `repeat(${Math.min(boros.length, 5)}, 1fr)`;
+  tallyCols(boros.length);
   for (const b of boros) {
     const d = document.createElement("div");
     d.className = "tally";
@@ -474,7 +485,7 @@ cv.addEventListener("touchmove", e => {
 }, { passive: false });
 cv.addEventListener("touchend", () => { pinch = null; });
 
-new ResizeObserver(() => { if (cv.clientWidth !== lastW) layout(); }).observe(cv);
+new ResizeObserver(() => { if (cv.clientWidth !== lastW) { layout(); tallyCols(); } }).observe(cv);
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
 
 // ---- clock

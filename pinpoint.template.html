@@ -1,4 +1,5 @@
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pinpoint the Neighborhood</title>
 <style>
   :root {
@@ -147,7 +148,9 @@ let lastW = 0;
 function layout() {
   const w = cv.clientWidth;
   lastW = w;
-  const h = Math.round(Math.min(w * 0.72, innerHeight * 0.62));
+  // Portrait phones need a tall box; a width-driven ratio collapses the map to a strip.
+  const narrow = w < 600;
+  const h = Math.round(Math.min(w * (narrow ? 1.2 : 0.72), innerHeight * (narrow ? 0.6 : 0.62)));
   const dpr = devicePixelRatio || 1;
   cv.width = w * dpr; cv.height = h * dpr;
   cv.style.height = h + "px";

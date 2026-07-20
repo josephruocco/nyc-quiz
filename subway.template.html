@@ -113,7 +113,9 @@ const SUBWAY = /*SUBWAY*/;
 // view fitted to the tracks as a landmass with nothing on it.
 const LAND = (/*DATA*/).filter(h => h.b !== "Staten Island");
 const ROUNDS = 20;
-const SNAP_PX = 14;             // how close the cursor must be to grab a line
+// How close the pointer must be to grab a line. A fingertip is far blunter than
+// a mouse cursor, so touch gets a wider radius.
+const SNAP_PX = matchMedia("(pointer: coarse)").matches ? 24 : 14;
 
 // Official bullet colours. The yellow and grey ones carry dark type.
 const COLOR = {
@@ -170,7 +172,9 @@ function toLonLat([sx, sy]) {
 function layout() {
   const w = cv.clientWidth;
   lastW = w;
-  const h = Math.round(Math.min(w * 0.95, innerHeight * 0.74));   // the network is tall and narrow
+  // The network is tall and narrow, more so on a portrait phone.
+  const narrow = w < 600;
+  const h = Math.round(Math.min(w * (narrow ? 1.35 : 0.95), innerHeight * (narrow ? 0.62 : 0.74)));
   const dpr = devicePixelRatio || 1;
   cv.width = w * dpr; cv.height = h * dpr;
   cv.style.height = h + "px";
@@ -209,6 +213,12 @@ function segDistPx(p, a, b) {
   const t = len ? Math.max(0, Math.min(1, ((p[0] - a[0]) * bx + (p[1] - a[1]) * by) / len)) : 0;
   return Math.hypot(p[0] - a[0] - bx * t, p[1] - a[1] - by * t);
 }
+// How much further than the nearest line a second line may be and still count as
+// the same grab. Shared track is the case worth allowing: those lines sit on top of
+// each other, so they tie. Without this, a tap in the Manhattan trunk on a phone
+// screen grabs eighteen lines and any answer is right.
+const TIE_PX = 3;
+
 // Every route within grabbing distance, nearest first. More than one comes back
 // where lines share track, and any of them is a fair answer there.
 function routesAt(sx, sy) {
@@ -227,7 +237,8 @@ function routesAt(sx, sy) {
     }
     if (best <= SNAP_PX) found.push({ route, d: best });
   }
-  return found.sort((a, b) => a.d - b.d);
+  found.sort((a, b) => a.d - b.d);
+  return found.length ? found.filter(f => f.d <= found[0].d + TIE_PX) : found;
 }
 
 // ---- state
@@ -499,6 +510,18 @@ console.assert(STOPS.every(s => Math.min(...s.r.map(id => nearestOn(s.c, BY_ID.g
   const p = r.p[0][Math.floor(r.p[0].length / 2)];
   console.assert(routesAt(...px(p)).some(u => u.route === r), "a point on a line grabs that line");
   console.assert(routesAt(...px([-73.78, 40.50])).length === 0, "open water grabs nothing");
+  // A line with its own corridor must resolve to exactly itself.
+  const l = BY_ID.get("L");
+  console.assert(routesAt(...px(l.p[0][Math.floor(l.p[0].length / 2)])).length === 1,
+    "a line running alone grabs only itself");
+  // And a grab must not routinely sweep up the system. One point proves nothing —
+  // sample the network and check the middle of the distribution. Downtown, where
+  // several trunks converge, still ties a dozen lines at 1x; that is what zoom is for.
+  const counts = [];
+  for (const route of ROUTES) for (const line of route.p) for (let i = 0; i < line.length; i += 40)
+    counts.push(routesAt(...px(line[i])).length);
+  counts.sort((a, b) => a - b);
+  console.assert(counts[Math.floor(counts.length / 2)] <= 4, "a typical grab stays a grab, not a dragnet");
 })();
 // screen <-> lonlat must round-trip under zoom, or clicks score against the wrong spot
 (() => {
