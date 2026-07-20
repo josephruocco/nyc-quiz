@@ -235,7 +235,7 @@ input.addEventListener("input", () => {
   }
   foundEl.textContent = found;
   flash.textContent = hits.length > 1
-    ? `${hits[0].el.textContent} — counted in ${hits.length} boroughs`
+    ? `${hits[0].el.textContent} (counted in ${hits.length} boroughs)`
     : hits[0].el.textContent;
   flash.className = "flash hit";
   input.value = "";

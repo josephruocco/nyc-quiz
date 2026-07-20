@@ -75,7 +75,7 @@
 <div class="wrap">
   <header>
     <h1>Which Train?</h1>
-    <p class="sub">A station, and the whole alphabet of trains. Pick every line that stops there — no map, no hints. 20 rounds.</p>
+    <p class="sub">A station, and the whole alphabet of trains. Pick every line that stops there. No map, no hints. 20 rounds.</p>
   </header>
 
   <div class="prompt">
@@ -188,7 +188,7 @@ function check() {
   el("verdict").textContent = right ? "Right." : "Not quite.";
   el("verdict").className = "verdict " + (right ? "good" : "bad");
   el("detail").textContent = options.length > 1
-    ? `${target.n} is ${options.length} stations — ${options.map(phrase).join(", ")}`
+    ? `${target.n} is ${options.length} stations: ${options.map(phrase).join(", ")}`
     : (right ? `${target.n} it is` : `${target.n} is served by ${phrase(options[0])}`);
   el("hits").textContent = hits;
   el("check").hidden = true;

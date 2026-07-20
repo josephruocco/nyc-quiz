@@ -129,7 +129,7 @@
   </form>
 
 <div id="game" hidden>
-  <div class="prompt" id="prompt"><span id="promptText">Free play — name them in any order.</span></div>
+  <div class="prompt" id="prompt"><span id="promptText">Free play. Name them in any order.</span></div>
 
   <div class="bar">
     <input id="guess" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type a neighborhood…" aria-label="Type a neighborhood name">
@@ -324,7 +324,7 @@ el("guess").addEventListener("input", () => {
   const hits = (INDEX.get(key) || []).filter(h => !guessed.has(h));
   if (!hits.length) return;
   if (mode === "one" && target && !hits.includes(target)) {
-    el("flash").textContent = `${hits[0].n} — but that's not the one being asked`;
+    el("flash").textContent = `${hits[0].n}, but that's not the one being asked`;
     el("flash").className = "flash";
     return;
   }
@@ -381,7 +381,7 @@ function giveUp(why) {
   if (revealed) return;
   const missed = remaining();
   fill(missed, true);
-  finish(`${why} — ${missed.length} unnamed. Faded shapes are the ones you missed.`);
+  finish(`${why}. ${missed.length} unnamed. Faded shapes are the ones you missed.`);
 }
 
 el("reveal").addEventListener("click", () => giveUp("Stopped"));
@@ -396,7 +396,7 @@ el("mode").addEventListener("click", () => {
   else {
     target = null;
     document.documentElement.style.removeProperty("--c");
-    el("promptText").textContent = "Free play — name them in any order.";
+    el("promptText").textContent = "Free play. Name them in any order.";
     draw();
   }
   el("guess").focus();
@@ -522,7 +522,7 @@ function refreshSetup() {
   el("timed").setAttribute("aria-pressed", String(timed));
   el("untimed").setAttribute("aria-pressed", String(!timed));
   const n = pool().length;
-  el("setupNote").textContent = timed ? `${n} neighborhoods — ${fmt(budget(n))} on the clock` : `${n} neighborhoods, no clock`;
+  el("setupNote").textContent = timed ? `${n} neighborhoods, ${fmt(budget(n))} on the clock` : `${n} neighborhoods, no clock`;
 }
 
 el("boroChoices").addEventListener("click", e => {

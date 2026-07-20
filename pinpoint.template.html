@@ -94,7 +94,7 @@
   <div class="prompt">
     <span class="boro" id="boro">Round 1</span>
     <span class="target" id="target">Loading…</span>
-    <span class="stats"><b id="hits">0</b> exact &middot; avg miss <b id="avg">—</b></span>
+    <span class="stats"><b id="hits">0</b> exact &middot; avg miss <b id="avg">n/a</b></span>
   </div>
 
   <div class="opts" id="boroOpts" role="group" aria-label="Boroughs included"></div>
@@ -242,7 +242,7 @@ function ask() {
   guess = null; answered = false;
   cv.classList.remove("done");
   document.documentElement.style.setProperty("--c", `var(${COLOR[target.b]})`);
-  el("boro").textContent = `Round ${round + 1} of ${order.length} — ${target.b}`;
+  el("boro").textContent = `Round ${round + 1} of ${order.length} &middot; ${target.b}`;
   el("target").textContent = target.n;
   el("verdict").textContent = ""; el("detail").textContent = "";
   el("next").hidden = true;
@@ -279,9 +279,9 @@ function place(sx, sy) {
   el("verdict").className = "verdict " + (inside ? "good" : "bad");
   el("detail").textContent = inside
     ? `${d.toFixed(1)} mi from center`
-    : `${d.toFixed(1)} mi off — highlighted in ${target.b}`;
+    : `${d.toFixed(1)} mi off, highlighted in ${target.b}`;
   el("hits").textContent = hits;
-  el("avg").textContent = misses.length ? avg().toFixed(1) + " mi" : "—";
+  el("avg").textContent = misses.length ? avg().toFixed(1) + " mi" : "n/a";
   el("next").hidden = false;
   el("next").textContent = round + 1 >= order.length ? "See results" : "Next";
   el("next").onclick = () => { round++; ask(); };
@@ -374,7 +374,7 @@ function restart() {
   round = 0; hits = 0; misses = []; guess = null; answered = false;
   zoom = 1; panX = 0; panY = 0;
   el("hits").textContent = "0";
-  el("avg").textContent = "—";
+  el("avg").textContent = "n/a";
   fitBounds();
   layout();
   ask();

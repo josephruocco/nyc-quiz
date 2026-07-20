@@ -84,7 +84,7 @@
   <div class="prompt">
     <span class="round" id="round">Round 1</span>
     <span class="ask"><span id="askBullet"></span><span class="askText" id="askText">Loading…</span></span>
-    <span class="stats"><b id="hits">0</b> right &middot; avg miss <b id="avg">—</b></span>
+    <span class="stats"><b id="hits">0</b> right &middot; avg miss <b id="avg">n/a</b></span>
   </div>
 
   <div class="opts">
@@ -324,7 +324,7 @@ function place(sx, sy) {
   const under = routesAt(sx, sy);
   if (!under.length) {
     el("verdict").textContent = "";
-    el("detail").textContent = "Click on a line — the one under the cursor thickens.";
+    el("detail").textContent = "Click on a line. The one under the cursor thickens.";
     return;
   }
 
@@ -346,10 +346,10 @@ function place(sx, sy) {
   const named = answers.join(" or ");
   el("detail").textContent = on
     ? (mode === "line" ? `that's the ${picked}` : `${target.n} is on the ${named}`)
-    : (mode === "line" ? `you picked the ${picked} — the ${target.r} is highlighted, ${best.d.toFixed(2)} mi away`
-                       : `you picked the ${picked} — ${target.n} is on the ${named}`);
+    : (mode === "line" ? `you picked the ${picked}. The ${target.r} is highlighted, ${best.d.toFixed(2)} mi away`
+                       : `you picked the ${picked}. ${target.n} is on the ${named}`);
   el("hits").textContent = hits;
-  el("avg").textContent = misses.length ? (misses.reduce((a, b) => a + b, 0) / misses.length).toFixed(2) + " mi" : "—";
+  el("avg").textContent = misses.length ? (misses.reduce((a, b) => a + b, 0) / misses.length).toFixed(2) + " mi" : "n/a";
   el("next").hidden = false;
   el("next").textContent = round + 1 >= order.length ? "See results" : "Next";
   el("next").onclick = () => { round++; ask(); };
@@ -379,7 +379,7 @@ function restart() {
   round = 0; hits = 0; misses = []; guess = null; answered = false; best = null; picked = null; hover = null;
   zoom = 1; panX = 0; panY = 0;
   el("hits").textContent = "0";
-  el("avg").textContent = "—";
+  el("avg").textContent = "n/a";
   layout();
   ask();
 }
