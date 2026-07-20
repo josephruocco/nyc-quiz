@@ -71,6 +71,19 @@
   button[hidden] { display: none; }
 
   .opts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+  /* On a phone the map is the page: shrink the furniture, and move the controls
+     below the map so it starts higher and gets more height. */
+  @media (max-width: 700px) {
+    .wrap { padding: 14px 12px 40px; gap: 10px; }
+    h1 { font-size: 23px; }
+    .sub { font-size: 13px; line-height: 1.45; }
+    .stage { order: 2; }
+    .result { order: 3; }
+    .opts { order: 4; }
+    .tallies { order: 5; }
+  }
+
   .opts .spacer { flex: 1; }
   .zoomlvl { font-family: var(--mono); font-size: 12px; color: var(--dim); min-width: 3.4em; text-align: right; }
 </style>
@@ -102,6 +115,7 @@
   <div class="result">
     <span class="verdict" id="verdict"></span>
     <span class="detail" id="detail"></span>
+    <button id="confirm" hidden>Confirm</button>
     <button id="next" hidden>Next</button>
   </div>
 </div>
@@ -174,7 +188,7 @@ function layout() {
   lastW = w;
   // The network is tall and narrow, more so on a portrait phone.
   const narrow = w < 600;
-  const h = Math.round(Math.min(w * (narrow ? 1.35 : 0.95), innerHeight * (narrow ? 0.62 : 0.74)));
+  const h = Math.round(Math.min(w * (narrow ? 1.35 : 0.95), innerHeight * (narrow ? 0.68 : 0.74)));
   const dpr = devicePixelRatio || 1;
   cv.width = w * dpr; cv.height = h * dpr;
   cv.style.height = h + "px";
@@ -242,6 +256,10 @@ function routesAt(sx, sy) {
 }
 
 // ---- state
+// On touch there is no hover, and you cannot see the line under your fingertip.
+// A tap previews which line it grabbed; you confirm or tap somewhere else.
+const TOUCH = matchMedia("(pointer: coarse)").matches;
+let pendingPt = null;
 let round = 0, hits = 0, misses = [], target = null, answers = [], guess = null,
     answered = false, best = null, mode = "line", picked = null, hover = null;
 let order = [];
@@ -327,8 +345,17 @@ function ask() {
     : `Which line serves ${target.n}?`;
   el("verdict").textContent = ""; el("detail").textContent = "";
   el("next").hidden = true;
+  el("confirm").hidden = true;
+  pendingPt = null;
   draw();
 }
+
+el("confirm").addEventListener("click", () => {
+  if (!pendingPt || answered) return;
+  const [sx, sy] = pendingPt;
+  el("confirm").hidden = true;
+  place(sx, sy);
+});
 
 function place(sx, sy) {
   if (!target || answered) return;
@@ -345,6 +372,7 @@ function place(sx, sy) {
   guess = toLonLat([sx, sy]);
   answered = true;
   hover = null;
+  pendingPt = null;
   cv.classList.add("done");
 
   // Where lines share track several come back at once, and any accepted one counts.
@@ -475,7 +503,23 @@ cv.addEventListener("pointerup", e => {
   cv.classList.remove("dragging");
   if (wasDrag) return;
   const r = cv.getBoundingClientRect();
-  place(e.clientX - r.left, e.clientY - r.top);
+  const sx = e.clientX - r.left, sy = e.clientY - r.top;
+  if (!TOUCH) return place(sx, sy);
+  if (answered) return;
+  const under = routesAt(sx, sy);
+  if (!under.length) {
+    pendingPt = null;
+    hover = null;
+    el("confirm").hidden = true;
+    el("detail").textContent = "Tap on a line. The one you pick lights up before it counts.";
+    draw();
+    return;
+  }
+  pendingPt = [sx, sy];
+  hover = under[0].route;                 // show what the tap grabbed
+  el("confirm").hidden = false;
+  el("detail").textContent = "That line is highlighted. Confirm, or tap another.";
+  draw();
 });
 cv.addEventListener("pointercancel", () => { drag = null; cv.classList.remove("dragging"); });
 

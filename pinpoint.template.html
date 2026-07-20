@@ -64,6 +64,21 @@
   canvas.dragging { cursor: grabbing; }
 
   .opts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+  /* On a phone the map is the page: shrink the furniture, and move the controls
+     below the map so it starts higher and gets more height. */
+  @media (max-width: 700px) {
+    .wrap { padding: 14px 12px 40px; gap: 10px; }
+    h1 { font-size: 23px; }
+    .sub { font-size: 13px; line-height: 1.45; }
+  .prompt { padding: 10px 0; }
+    .target { min-height: 2.5em; }
+    .stage { order: 2; }
+    .result { order: 3; }
+    .opts { order: 4; }
+    .tallies { order: 5; }
+  }
+
   .opts .spacer { flex: 1; }
   .opts button { font-size: 11px; padding: 11px 13px; }
   .opts button[aria-pressed="true"] { background: var(--text); color: var(--paper); border-color: var(--text); }
@@ -115,6 +130,7 @@
   <div class="result">
     <span class="verdict" id="verdict"></span>
     <span class="detail" id="detail"></span>
+    <button id="confirm" hidden>Confirm</button>
     <button id="next" hidden>Next</button>
   </div>
 </div>
@@ -150,7 +166,7 @@ function layout() {
   lastW = w;
   // Portrait phones need a tall box; a width-driven ratio collapses the map to a strip.
   const narrow = w < 600;
-  const h = Math.round(Math.min(w * (narrow ? 1.2 : 0.72), innerHeight * (narrow ? 0.6 : 0.62)));
+  const h = Math.round(Math.min(w * (narrow ? 1.2 : 0.72), innerHeight * (narrow ? 0.66 : 0.62)));
   const dpr = devicePixelRatio || 1;
   cv.width = w * dpr; cv.height = h * dpr;
   cv.style.height = h + "px";
@@ -170,6 +186,10 @@ const px = ([x, y]) => [
 
 // guess is kept in lon/lat, not screen pixels: the player can zoom and pan after
 // answering, and the dot has to stay on the spot they actually clicked.
+// On touch you cannot see under your own fingertip, so a tap does not commit.
+// It drops a marker you can drag and check against the map, then confirm.
+const TOUCH = matchMedia("(pointer: coarse)").matches;
+let pending = null, markerDrag = false;
 let round = 0, hits = 0, misses = [], target = null, guess = null, answered = false, inside = false;
 let order = [];
 
@@ -190,6 +210,19 @@ function draw() {
   ctx.strokeStyle = cssVar("--line");
   ctx.lineWidth = 0.7;
   for (const hood of POOL) { path(hood.p); ctx.fill(); if (showLines) ctx.stroke(); }
+
+  if (pending && !answered) {
+    const [mx, my] = px(pending);
+    ctx.strokeStyle = cssVar("--text");
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(mx - 14, my); ctx.lineTo(mx - 5, my);
+    ctx.moveTo(mx + 5, my); ctx.lineTo(mx + 14, my);
+    ctx.moveTo(mx, my - 14); ctx.lineTo(mx, my - 5);
+    ctx.moveTo(mx, my + 5); ctx.lineTo(mx, my + 14);
+    ctx.stroke();
+    ctx.beginPath(); ctx.arc(mx, my, 4, 0, 7); ctx.stroke();
+  }
 
   if (answered && target) {
     const c = cssVar(COLOR[target.b]);
@@ -250,6 +283,8 @@ function ask() {
   el("target").textContent = target.n;
   el("verdict").textContent = ""; el("detail").textContent = "";
   el("next").hidden = true;
+  el("confirm").hidden = true;
+  pending = null;
   draw();
 }
 
@@ -268,10 +303,18 @@ function finish() {
 
 const avg = () => misses.reduce((a, b) => a + b, 0) / misses.length;
 
+el("confirm").addEventListener("click", () => {
+  if (!pending || answered) return;
+  const [sx, sy] = px(pending);
+  el("confirm").hidden = true;
+  place(sx, sy);
+});
+
 function place(sx, sy) {
   if (!target || answered) return;
   const pt = [sx, sy];
   guess = toLonLat(pt);
+  pending = null;
   answered = true;
   cv.classList.add("done");
 
@@ -330,10 +373,26 @@ el("lines").addEventListener("click", () => {
 const SLOP = 4;
 let drag = null;
 cv.addEventListener("pointerdown", e => {
+  const r = cv.getBoundingClientRect();
+  const sx = e.clientX - r.left, sy = e.clientY - r.top;
+  if (TOUCH && pending && !answered) {
+    const [mx, my] = px(pending);
+    if (Math.hypot(sx - mx, sy - my) <= 36) {   // grabbed the marker, not the map
+      markerDrag = true;
+      cv.setPointerCapture(e.pointerId);
+      return;
+    }
+  }
   drag = { x: e.clientX, y: e.clientY, px: panX, py: panY, moved: false };
   cv.setPointerCapture(e.pointerId);
 });
 cv.addEventListener("pointermove", e => {
+  if (markerDrag) {
+    const r = cv.getBoundingClientRect();
+    pending = toLonLat([e.clientX - r.left, e.clientY - r.top]);
+    draw();
+    return;
+  }
   if (!drag) return;
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
   if (!drag.moved && Math.hypot(dx, dy) < SLOP) return;
@@ -345,12 +404,19 @@ cv.addEventListener("pointermove", e => {
   draw();
 });
 cv.addEventListener("pointerup", e => {
+  if (markerDrag) { markerDrag = false; return; }
   const wasDrag = drag && drag.moved;
   drag = null;
   cv.classList.remove("dragging");
   if (wasDrag) return;
   const r = cv.getBoundingClientRect();
-  place(e.clientX - r.left, e.clientY - r.top);
+  const sx = e.clientX - r.left, sy = e.clientY - r.top;
+  if (!TOUCH) return place(sx, sy);
+  if (answered) return;
+  pending = toLonLat([sx, sy]);          // adjust it, then confirm
+  el("confirm").hidden = false;
+  el("detail").textContent = "Drag the marker to adjust, then confirm.";
+  draw();
 });
 cv.addEventListener("pointercancel", () => { drag = null; cv.classList.remove("dragging"); });
 

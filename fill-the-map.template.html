@@ -64,6 +64,19 @@
   button[aria-pressed="true"] { background: var(--text); color: var(--paper); border-color: var(--text); }
 
   .opts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+  /* On a phone the map is the page: shrink the furniture, and move the controls
+     below the map so it starts higher and gets more height. */
+  @media (max-width: 700px) {
+    .wrap { padding: 14px 12px 40px; gap: 10px; }
+    h1 { font-size: 23px; }
+    .sub { font-size: 13px; line-height: 1.45; }
+    .stage { order: 2; }
+    .result { order: 3; }
+    .opts { order: 4; }
+    .tallies { order: 5; }
+  }
+
   .opts .spacer { flex: 1; }
   .zoomlvl { font-family: var(--mono); font-size: 12px; color: var(--dim); min-width: 3.4em; text-align: right; }
 
@@ -223,7 +236,7 @@ function layout() {
   lastW = w;
   // Portrait phones need a tall box; a width-driven ratio collapses the map to a strip.
   const narrow = w < 600;
-  const h = Math.round(Math.min(w * (narrow ? 1.2 : 0.78), innerHeight * (narrow ? 0.6 : 0.7)));
+  const h = Math.round(Math.min(w * (narrow ? 1.2 : 0.78), innerHeight * (narrow ? 0.66 : 0.7)));
   const dpr = devicePixelRatio || 1;
   cv.width = w * dpr; cv.height = h * dpr;
   cv.style.height = h + "px";
