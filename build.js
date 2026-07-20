@@ -14,8 +14,10 @@ const egg = `\n<script>\n${fs.readFileSync("penguin.js", "utf8")}</script>\n`;
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT);
 
+const EGG_PAGE = "pinpoint.html";   // the easter egg lives on exactly one page
+
 const write = (name, html) => {
-  fs.writeFileSync(`${OUT}/${name}`, html + egg);
+  fs.writeFileSync(`${OUT}/${name}`, name === EGG_PAGE ? html + egg : html);
   console.log(`${OUT}/${name}  ${(fs.statSync(`${OUT}/${name}`).size / 1024).toFixed(0)}K`);
 };
 
