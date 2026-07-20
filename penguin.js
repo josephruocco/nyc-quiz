@@ -53,7 +53,11 @@
     setTimeout(() => heart.remove(), 1600);
   }
 
+  let busy = false;
+
   async function visit() {
+    if (busy) return;
+    busy = true;
     const fromRight = Math.random() < 0.5;
     const off = fromRight ? innerWidth + 10 : -50;
     const peek = fromRight ? innerWidth - PEEK : PEEK - 40;
@@ -78,11 +82,21 @@
     box.classList.add("walking");
     await slide(peek, off, OUT, "ease-in");   // back out the way he came
     box.remove();
+    busy = false;
     return box;
   }
 
   // Once per page load, after a while. No repeat scheduler.
   setTimeout(() => { if (!document.hidden) visit(); }, WAIT_MIN + Math.random() * (WAIT_MAX - WAIT_MIN));
+
+  // Shift+P summons him on demand — the natural wait is 30-70s, which is far too
+  // long to sit through when you're checking a change to the animation.
+  addEventListener("keydown", e => {
+    // Browsers report "P" with shift held; some automation reports "p". Accept both.
+    if (e.key.toLowerCase() !== "p" || !e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+    visit();
+  });
 
   // self-check: scenery only, and standing on the bottom edge rather than floating.
   const probe = document.createElement("div");
