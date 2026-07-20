@@ -1,13 +1,28 @@
-// Easter egg, pinpoint.html only. Once per page load a penguin peeks in from one
-// side, stops just shy of the edge, waves, blows a kiss, and backs out the same
-// way. Stays upright on the bottom edge the whole time. It is scenery: no pointer
-// events, no focus, no layout shift — a player mid-quiz can ignore it completely.
+// Easter egg, pinpoint.html only. Every so often a penguin turns up along the
+// bottom edge and does one of a few small routines, then leaves the way he came.
+// He is scenery: no pointer events, no focus, no layout shift, never rotated off
+// the bottom edge. A player mid-quiz can ignore him completely.
 (() => {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-  const WAIT_MIN = 30_000, WAIT_MAX = 70_000;   // ponytail: untuned range. Widen if it shows up too eagerly.
-  const IN = 1400, HOLD = 3400, OUT = 1100;
-  const PEEK = 24;   // px of penguin left showing at the edge — "a touch off the side"
+  const FIRST = [18_000, 40_000];    // first appearance after load
+  const GAP = [50_000, 110_000];     // and roughly every minute or two after that
+  const IN = 1400, OUT = 1100;
+  const CROSS = 13_000;              // time to waddle the full width
+
+  // Weighted so the full greeting stays the headline act and the rest are garnish.
+  const ROUTINES = [
+    ["greet", 5],   // peek in, wave, blow a kiss, leave
+    ["wave", 3],    // peek in, wave, leave
+    ["shy", 3],     // peek in, think better of it, duck straight back out
+    ["cross", 2],   // waddle the whole way across and off the far side
+  ];
+  const TOTAL = ROUTINES.reduce((n, r) => n + r[1], 0);
+  function pickRoutine() {
+    let roll = Math.random() * TOTAL;
+    for (const [name, weight] of ROUTINES) if ((roll -= weight) < 0) return name;
+    return "greet";
+  }
 
   const svg = `
   <svg viewBox="0 0 40 52" width="40" height="52" aria-hidden="true">
@@ -28,13 +43,15 @@
   style.textContent = `
     @keyframes peng-waddle { 0%,100% { transform: rotate(-4deg) translateY(0); } 50% { transform: rotate(4deg) translateY(-2px); } }
     @keyframes peng-wave  { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(-58deg); } }
+    @keyframes peng-look  { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(-9deg); } }
     @keyframes peng-kiss  { from { transform: translate(0,0) scale(0.5); opacity: 0; }
                             25%  { opacity: 0.9; }
                             to   { transform: translate(4px,-40px) scale(1.1); opacity: 0; } }
-    /* bottom:0 and no rotation anywhere — he stands on the bottom edge, always. */
+    /* bottom:0 and no rotation on the body, so he stands on the bottom edge always. */
     .peng { position: fixed; bottom: 0; left: 0; z-index: 0; pointer-events: none; opacity: 0.9; }
     .peng > svg { transform-origin: 50% 90%; }
     .peng.walking > svg { animation: peng-waddle 0.42s ease-in-out infinite; }
+    .peng.looking > svg { animation: peng-look 1.1s ease-in-out 1; }
     .peng.flip > svg { scale: -1 1; }
     .peng.waving .wing { animation: peng-wave 0.36s ease-in-out 5; transform-origin: 30px 24px; }
     .peng-kiss { position: fixed; bottom: 36px; z-index: 0; pointer-events: none;
@@ -43,6 +60,7 @@
   document.head.appendChild(style);
 
   const wait = ms => new Promise(r => setTimeout(r, ms));
+  const between = ([lo, hi]) => lo + Math.random() * (hi - lo);
 
   function kissAt(x) {
     const heart = document.createElement("div");
@@ -55,12 +73,15 @@
 
   let busy = false;
 
-  async function visit() {
-    if (busy) return;
+  async function visit(routine = pickRoutine()) {
+    if (busy) return null;
     busy = true;
+
     const fromRight = Math.random() < 0.5;
     const off = fromRight ? innerWidth + 10 : -50;
-    const peek = fromRight ? innerWidth - PEEK : PEEK - 40;
+    const away = fromRight ? -50 : innerWidth + 10;   // the far side, for a crossing
+    const showing = 18 + Math.random() * 14;          // how much of him clears the edge
+    const peek = fromRight ? innerWidth - showing : showing - 40;
 
     const box = document.createElement("div");
     box.className = "peng walking" + (fromRight ? " flip" : "");
@@ -72,25 +93,41 @@
       [{ transform: `translateX(${a}px)` }, { transform: `translateX(${b}px)` }],
       { duration: ms, easing, fill: "forwards" }).finished;
 
-    await slide(off, peek, IN, "ease-out");
-    box.classList.remove("walking");     // stand still to say hello
-    box.classList.add("waving");
-    await wait(900);
-    kissAt(peek + (fromRight ? 6 : 26));
-    await wait(HOLD - 900);
-    box.classList.remove("waving");
-    box.classList.add("walking");
-    await slide(peek, off, OUT, "ease-in");   // back out the way he came
+    if (routine === "cross") {
+      await slide(off, away, CROSS, "linear");
+    } else {
+      await slide(off, peek, IN, "ease-out");
+      box.classList.remove("walking");            // stand still
+      if (routine === "shy") {
+        box.classList.add("looking");
+        await wait(1100);
+        box.classList.remove("looking");
+      } else {
+        box.classList.add("waving");
+        await wait(900);
+        if (routine === "greet") kissAt(peek + (fromRight ? 6 : 26));
+        await wait(1500);
+        box.classList.remove("waving");
+      }
+      box.classList.add("walking");
+      await slide(peek, off, OUT, "ease-in");      // back out the way he came
+    }
+
     box.remove();
     busy = false;
-    return box;
+    return routine;
   }
 
-  // Once per page load, after a while. No repeat scheduler.
-  setTimeout(() => { if (!document.hidden) visit(); }, WAIT_MIN + Math.random() * (WAIT_MAX - WAIT_MIN));
+  // Keeps coming back, unlike the old one-shot. Skipped while the tab is hidden.
+  (function schedule(range) {
+    setTimeout(async () => {
+      if (!document.hidden) await visit();
+      schedule(GAP);
+    }, between(range));
+  })(FIRST);
 
-  // Shift+P summons him on demand — the natural wait is 30-70s, which is far too
-  // long to sit through when you're checking a change to the animation.
+  // Shift+P summons him on demand. Waiting out the timer to check an animation
+  // change is not a good use of anyone's afternoon.
   addEventListener("keydown", e => {
     // Browsers report "P" with shift held; some automation reports "p". Accept both.
     if (e.key.toLowerCase() !== "p" || !e.shiftKey || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -98,16 +135,20 @@
     visit();
   });
 
-  // self-check: scenery only, and standing on the bottom edge rather than floating.
+  // ---- self-checks: scenery only, standing on the bottom edge, and every routine
+  // in the table is one the player can actually get.
   const probe = document.createElement("div");
   probe.className = "peng walking";
   probe.innerHTML = svg;
   document.body.appendChild(probe);
-  // Measure the pinned container, not the svg: the waddle bobs it a couple of px.
-  const r = probe.getBoundingClientRect();
+  const r = probe.getBoundingClientRect();   // the container, not the mid-waddle svg
   console.assert(getComputedStyle(probe).pointerEvents === "none", "the penguin never intercepts clicks");
   console.assert(!probe.querySelector("a, button, input, [tabindex]"), "penguin holds nothing focusable");
   console.assert(Math.round(r.bottom) === innerHeight, "penguin stands on the bottom edge");
   console.assert(document.body.scrollWidth <= innerWidth + 1, "penguin adds no horizontal scroll");
   probe.remove();
+  console.assert(new Set(Array.from({ length: 400 }, pickRoutine)).size === ROUTINES.length,
+    "every routine is reachable");
+  console.assert(ROUTINES.every(([name]) => ["greet", "wave", "shy", "cross"].includes(name)),
+    "no routine name without a branch to run it");
 })();
