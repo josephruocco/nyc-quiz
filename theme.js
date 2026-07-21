@@ -22,6 +22,7 @@
   // Emit the .html form: it serves directly everywhere, with no reliance on the
   // host's clean-URL support (and no extra redirect hop through the proxy).
   const toMount = h => {
+    if (!MOUNT) return null;   // standalone: leave links exactly as authored
     const m = /^\/?([\w-]+)(?:\.html)?([?#].*)?$/.exec(h);
     return m && PAGES.includes(m[1]) ? MOUNT + m[1] + ".html" + (m[2] || "") : null;
   };
@@ -69,9 +70,11 @@
       body { padding-top: 42px; }
     }
     .site-credit {
-      max-width: 1080px; margin: 0 auto; padding: 0 20px 32px;
+      max-width: 1080px; margin: 0 auto; padding: 24px 20px 40px; text-align: center;
       font-family: var(--mono, monospace); font-size: 12px; color: var(--dim);
+      border-top: 1px solid var(--line);
     }
+    .site-credit .promo { display: block; font-size: 13px; color: var(--text); margin-bottom: 10px; }
     .site-credit a { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--line); }
     .site-credit a:hover { border-bottom-color: var(--text); }
     .site-credit a:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
@@ -119,6 +122,15 @@
   // Byline, appended after the switch so it really is the last thing on the page.
   const credit = document.createElement("footer");
   credit.className = "site-credit";
+
+  // Funnel back to the app. Absolute so it points at StreetLore from the proxied
+  // quiz and from the standalone site alike.
+  const promo = document.createElement("a");
+  promo.className = "promo";
+  promo.href = "https://streetlore.nyc";
+  promo.textContent = "Live in New York? Download StreetLore NYC →";
+  credit.appendChild(promo);
+
   credit.append("Created by ");
   const me = document.createElement("a");
   me.href = "https://josephruocco.net";
@@ -144,4 +156,5 @@
   console.assert(!main || credit.getBoundingClientRect().top >= main.getBoundingClientRect().bottom - 1,
     "the byline renders below the page content");
   console.assert(me.href === "https://josephruocco.net/", "the byline links out");
+  console.assert(promo.href === "https://streetlore.nyc/", "the app promo links to StreetLore");
 })();
