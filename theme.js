@@ -6,20 +6,20 @@
   const root = document.documentElement;
 
   // These pages link to each other with relative hrefs. Standalone that's fine,
-  // but proxied under streetlore.nyc/quiz a URL without the trailing slash (/quiz,
-  // or a clean /quiz/subway) can make those links resolve against the site root
-  // and 404. A <base> pointed at the quiz mount fixes every internal link at once,
-  // and is a no-op on the standalone site where the mount is just "/".
-  (() => {
-    const p = location.pathname;
-    const i = p.indexOf("/quiz/");
-    const mount = i >= 0 ? p.slice(0, i) + "/quiz/" : (p === "/quiz" ? "/quiz/" : null);
-    if (mount) {
-      const b = document.createElement("base");
-      b.href = mount;
-      document.head.insertBefore(b, document.head.firstChild);
+  // but proxied under streetlore.nyc/quiz a URL missing the trailing slash (/quiz)
+  // or a clean one (/quiz/subway) makes those links resolve against the site root
+  // and 404. Compute the mount and rewrite the internal page links to keep it —
+  // done directly rather than via <base>, which didn't reliably re-resolve links
+  // already parsed into the page. Empty (a no-op) on the standalone site.
+  const _p = location.pathname;
+  const _qi = _p.indexOf("/quiz/");
+  const MOUNT = _qi >= 0 ? _p.slice(0, _qi) + "/quiz/" : (_p === "/quiz" ? "/quiz/" : "");
+  if (MOUNT) {
+    for (const a of document.querySelectorAll("a[href]")) {
+      const h = a.getAttribute("href");
+      if (/^[\w.-]+\.html([?#].*)?$/.test(h)) a.setAttribute("href", MOUNT + h);
     }
-  })();
+  }
 
   const KEY = "nyc-quiz-theme";
   const system = () => matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -70,12 +70,13 @@
   const box = document.createElement("div");
   box.className = "theme-pick";
 
-  // Every page but the menu itself gets a way back to the menu.
-  const onMenu = /(^\/?|\/)(index\.html)?$/.test(location.pathname);
+  // Every page but the menu itself gets a way back to the menu. Detect the menu by
+  // its game grid rather than the URL, so it holds under the proxy's clean paths.
+  const onMenu = !!document.querySelector(".games");
   if (!onMenu) {
     const home = document.createElement("a");
     home.className = "home";
-    home.href = "index.html";
+    home.setAttribute("href", MOUNT + "index.html");
     home.textContent = "← Menu";
     box.appendChild(home);
   }
@@ -115,12 +116,16 @@
   document.body.appendChild(credit);
 
   // self-check
-  console.assert(getComputedStyle(box).position === "fixed", "theme switch stays out of the layout");
+  // fixed on desktop, absolute under the mobile breakpoint — either keeps it out of flow.
+  console.assert(/fixed|absolute/.test(getComputedStyle(box).position), "theme switch stays out of the layout");
   console.assert(buttons.filter(([, b]) => b.getAttribute("aria-pressed") === "true").length === 1,
     "exactly one theme reads as active");
   // A saved choice must survive the reload that brought us here.
   console.assert(!saved || root.dataset.theme === saved, "the saved theme is applied on load");
   console.assert(onMenu === !box.querySelector("a.home"), "every page but the menu has a way home");
+  // Under a /quiz mount, internal links must carry it; standalone they must not.
+  console.assert(!MOUNT || [...document.querySelectorAll("a[href$='.html']")].every(a => a.getAttribute("href").startsWith(MOUNT)),
+    "internal links keep the /quiz mount");
   // Not "is it the last node" — the penguin page appends a <script> after this one,
   // and script tags don't render. What matters is that it sits below the content.
   const main = document.querySelector(".wrap") || document.body.firstElementChild;
