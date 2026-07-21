@@ -1,3 +1,11 @@
 [build]
   command = "node build.js"
   publish = "dist"
+
+# Netlify's Pretty URLs post-processing rewrites in-page links to root-absolute,
+# extension-stripped form (href="pinpoint.html" -> "/pinpoint"). That breaks the
+# pages when they're proxied under streetlore.nyc/quiz — "/pinpoint" resolves to
+# the site root, not the mount. The pages are already self-contained (no assets to
+# bundle), so skip post-processing entirely and keep the links as authored.
+[build.processing]
+  skip_processing = true
