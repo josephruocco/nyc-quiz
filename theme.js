@@ -3,8 +3,25 @@
 // switch only has to set the attribute and remember the choice. With nothing chosen
 // the pages follow the OS, and the button matching the OS starts pressed.
 (() => {
-  const KEY = "nyc-quiz-theme";
   const root = document.documentElement;
+
+  // These pages link to each other with relative hrefs. Standalone that's fine,
+  // but proxied under streetlore.nyc/quiz a URL without the trailing slash (/quiz,
+  // or a clean /quiz/subway) can make those links resolve against the site root
+  // and 404. A <base> pointed at the quiz mount fixes every internal link at once,
+  // and is a no-op on the standalone site where the mount is just "/".
+  (() => {
+    const p = location.pathname;
+    const i = p.indexOf("/quiz/");
+    const mount = i >= 0 ? p.slice(0, i) + "/quiz/" : (p === "/quiz" ? "/quiz/" : null);
+    if (mount) {
+      const b = document.createElement("base");
+      b.href = mount;
+      document.head.insertBefore(b, document.head.firstChild);
+    }
+  })();
+
+  const KEY = "nyc-quiz-theme";
   const system = () => matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 
   const saved = localStorage.getItem(KEY);

@@ -3,29 +3,31 @@
 <title>NYC Neighborhood Quizzes</title>
 <style>
   :root {
-    --paper: #EAECEF; --panel: #F5F6F8; --line: #C9CDD3; --text: #14161A; --dim: #6A7079;
+    --paper: #F2EEE3; --panel: #EBE5D4; --line: #DBD3C0; --text: #23201B; --dim: #6E6757;
     --mn: #B65A1F; --bk: #1E7A6E; --qn: #4A5CB8; --bx: #A83A62;
     --display: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --paper: #101215; --panel: #191C21; --line: #333944; --text: #E7EAEE; --dim: #8A929D;
+      --paper: #171B18; --panel: #20261F; --line: #333B31; --text: #EFECE1; --dim: #9C9585;
       --mn: #E8934F; --bk: #45B8A8; --qn: #8B9BEA; --bx: #E27BA0;
     }
   }
   :root[data-theme="light"] {
-    --paper: #EAECEF; --panel: #F5F6F8; --line: #C9CDD3; --text: #14161A; --dim: #6A7079;
+    --paper: #F2EEE3; --panel: #EBE5D4; --line: #DBD3C0; --text: #23201B; --dim: #6E6757;
     --mn: #B65A1F; --bk: #1E7A6E; --qn: #4A5CB8; --bx: #A83A62;
   }
   :root[data-theme="dark"] {
-    --paper: #101215; --panel: #191C21; --line: #333944; --text: #E7EAEE; --dim: #8A929D;
+    --paper: #171B18; --panel: #20261F; --line: #333B31; --text: #EFECE1; --dim: #9C9585;
     --mn: #E8934F; --bk: #45B8A8; --qn: #8B9BEA; --bx: #E27BA0;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--paper); color: var(--text); font-family: var(--display); -webkit-font-smoothing: antialiased; }
   .wrap { max-width: 880px; margin: 0 auto; padding: 64px 20px 80px; }
   h1 { font-size: clamp(28px, 6vw, 44px); font-weight: 700; letter-spacing: -0.03em; line-height: 1; margin: 0; }
+  h1 { text-align: center; }
+  .sub { text-align: center; margin-left: auto; margin-right: auto; }
   .sub { color: var(--dim); font-size: 15px; max-width: 56ch; line-height: 1.5; margin: 12px 0 40px; }
 
   .games { display: grid; gap: 14px; }
