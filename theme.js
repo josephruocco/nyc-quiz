@@ -14,10 +14,21 @@
   const _p = location.pathname;
   const _qi = _p.indexOf("/quiz/");
   const MOUNT = _qi >= 0 ? _p.slice(0, _qi) + "/quiz/" : (_p === "/quiz" ? "/quiz/" : "");
+  // Match a quiz page in any form Netlify might serve it — "pinpoint.html",
+  // "/pinpoint" (Pretty URLs strips the extension and makes it root-absolute), or
+  // "pinpoint" — and repoint it at the mount. The origin serves both the clean and
+  // the .html path, so /quiz/pinpoint resolves either way.
+  const PAGES = ["fill-the-map", "pinpoint", "subway", "which-train", "name-them-all", "index"];
+  // Emit the .html form: it serves directly everywhere, with no reliance on the
+  // host's clean-URL support (and no extra redirect hop through the proxy).
+  const toMount = h => {
+    const m = /^\/?([\w-]+)(?:\.html)?([?#].*)?$/.exec(h);
+    return m && PAGES.includes(m[1]) ? MOUNT + m[1] + ".html" + (m[2] || "") : null;
+  };
   if (MOUNT) {
     for (const a of document.querySelectorAll("a[href]")) {
-      const h = a.getAttribute("href");
-      if (/^[\w.-]+\.html([?#].*)?$/.test(h)) a.setAttribute("href", MOUNT + h);
+      const to = toMount(a.getAttribute("href"));
+      if (to) a.setAttribute("href", to);
     }
   }
 
@@ -123,9 +134,10 @@
   // A saved choice must survive the reload that brought us here.
   console.assert(!saved || root.dataset.theme === saved, "the saved theme is applied on load");
   console.assert(onMenu === !box.querySelector("a.home"), "every page but the menu has a way home");
-  // Under a /quiz mount, internal links must carry it; standalone they must not.
-  console.assert(!MOUNT || [...document.querySelectorAll("a[href$='.html']")].every(a => a.getAttribute("href").startsWith(MOUNT)),
-    "internal links keep the /quiz mount");
+  // Under a /quiz mount, every quiz-page link must carry it, in whatever form it arrived.
+  console.assert(toMount("/pinpoint") === (MOUNT ? MOUNT + "pinpoint.html" : null), "root-absolute prettified link rewrites");
+  console.assert(toMount("pinpoint.html") === (MOUNT ? MOUNT + "pinpoint.html" : null), "relative .html link rewrites");
+  console.assert(toMount("https://example.com") === null, "external links are left alone");
   // Not "is it the last node" — the penguin page appends a <script> after this one,
   // and script tags don't render. What matters is that it sits below the content.
   const main = document.querySelector(".wrap") || document.body.firstElementChild;
