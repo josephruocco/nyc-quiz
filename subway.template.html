@@ -3,22 +3,22 @@
 <title>Pinpoint the Line</title>
 <style>
   :root {
-    --paper: #EAECEF; --panel: #F5F6F8; --line: #C9CDD3; --text: #14161A; --dim: #6A7079;
-    --water: #DCE1E7; --land: #F4F6F8; --rail: #C0C6CE; --miss: #B02E2E;
+    --paper: #F2EEE3; --panel: #EBE5D4; --line: #DBD3C0; --text: #23201B; --dim: #6E6757;
+    --water: #E4DDC8; --land: #F4F1E6; --rail: #CFC7B2; --miss: #B02E2E;
     --display: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --paper: #101215; --panel: #191C21; --line: #333944; --text: #E7EAEE;
-            --dim: #8A929D; --water: #0C0E11; --land: #23282F; --rail: #363C46; --miss: #E56B6B; }
+    :root { --paper: #171B18; --panel: #20261F; --line: #333B31; --text: #EFECE1;
+            --dim: #9C9585; --water: #10140E; --land: #252C24; --rail: #3A4238; --miss: #E56B6B; }
   }
   :root[data-theme="light"] {
-    --paper: #EAECEF; --panel: #F5F6F8; --line: #C9CDD3; --text: #14161A; --dim: #6A7079;
-    --water: #DCE1E7; --land: #F4F6F8; --rail: #C0C6CE; --miss: #B02E2E;
+    --paper: #F2EEE3; --panel: #EBE5D4; --line: #DBD3C0; --text: #23201B; --dim: #6E6757;
+    --water: #E4DDC8; --land: #F4F1E6; --rail: #CFC7B2; --miss: #B02E2E;
   }
   :root[data-theme="dark"] {
-    --paper: #101215; --panel: #191C21; --line: #333944; --text: #E7EAEE;
-    --dim: #8A929D; --water: #0C0E11; --land: #23282F; --rail: #363C46; --miss: #E56B6B;
+    --paper: #171B18; --panel: #20261F; --line: #333B31; --text: #EFECE1;
+    --dim: #9C9585; --water: #10140E; --land: #252C24; --rail: #3A4238; --miss: #E56B6B;
   }
 
   * { box-sizing: border-box; }
@@ -46,7 +46,7 @@
     display: grid; place-items: center;
     font: 700 24px/1 var(--display); color: #fff; background: var(--bc, var(--dim));
   }
-  .bullet.dark { color: #14161A; }   /* the yellow and light-grey bullets need dark type */
+  .bullet.dark { color: #23201B; }   /* the yellow and light-grey bullets need dark type */
   .bullet.sm { width: 28px; height: 28px; font-size: 15px; }
 
   .stage { position: relative; }
@@ -327,7 +327,7 @@ function draw() {
 function bullet(id, small) {
   const b = document.createElement("span");
   b.className = "bullet" + (small ? " sm" : "") + (DARK_TYPE.has(id) ? " dark" : "");
-  b.style.setProperty("--bc", COLOR[id] || "#6A7079");
+  b.style.setProperty("--bc", COLOR[id] || "#6E6757");
   b.textContent = id;
   return b;
 }

@@ -3,22 +3,22 @@
 <title>Which Train?</title>
 <style>
   :root {
-    --paper: #EAECEF; --panel: #F5F6F8; --line: #C9CDD3; --text: #14161A; --dim: #6A7079;
+    --paper: #F2EEE3; --panel: #EBE5D4; --line: #DBD3C0; --text: #23201B; --dim: #6E6757;
     --good: #1E7A6E; --miss: #B02E2E;
     --display: "Helvetica Neue", Helvetica, Arial, sans-serif;
     --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --paper: #101215; --panel: #191C21; --line: #333944; --text: #E7EAEE;
-            --dim: #8A929D; --good: #45B8A8; --miss: #E56B6B; }
+    :root { --paper: #171B18; --panel: #20261F; --line: #333B31; --text: #EFECE1;
+            --dim: #9C9585; --good: #45B8A8; --miss: #E56B6B; }
   }
   :root[data-theme="light"] {
-    --paper: #EAECEF; --panel: #F5F6F8; --line: #C9CDD3; --text: #14161A; --dim: #6A7079;
+    --paper: #F2EEE3; --panel: #EBE5D4; --line: #DBD3C0; --text: #23201B; --dim: #6E6757;
     --good: #1E7A6E; --miss: #B02E2E;
   }
   :root[data-theme="dark"] {
-    --paper: #101215; --panel: #191C21; --line: #333944; --text: #E7EAEE;
-    --dim: #8A929D; --good: #45B8A8; --miss: #E56B6B;
+    --paper: #171B18; --panel: #20261F; --line: #333B31; --text: #EFECE1;
+    --dim: #9C9585; --good: #45B8A8; --miss: #E56B6B;
   }
 
   * { box-sizing: border-box; }
@@ -48,7 +48,7 @@
     font: 700 22px/1 var(--display); color: #fff; background: var(--bc);
     opacity: 0.34; transition: opacity 0.12s, transform 0.12s;
   }
-  .pick.dark { color: #14161A; }
+  .pick.dark { color: #23201B; }
   .pick:hover { opacity: 0.7; }
   .pick[aria-pressed="true"] { opacity: 1; transform: scale(1.06); }
   .pick:focus-visible { outline: 2px solid var(--text); outline-offset: 3px; }
@@ -140,7 +140,7 @@ for (const id of IDS) {
   const b = document.createElement("button");
   b.type = "button";
   b.className = "pick" + (DARK_TYPE.has(id) ? " dark" : "");
-  b.style.setProperty("--bc", COLOR[id] || "#6A7079");
+  b.style.setProperty("--bc", COLOR[id] || "#6E6757");
   b.textContent = id;
   b.setAttribute("aria-pressed", "false");
   b.setAttribute("aria-label", `Line ${id}`);
