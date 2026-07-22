@@ -38,7 +38,7 @@
   }
 
   body { background: var(--paper); color: var(--text); font-family: var(--display); -webkit-font-smoothing: antialiased; }
-  .wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 60px; display: flex; flex-direction: column; gap: 16px; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 16px 20px 40px; display: flex; flex-direction: column; gap: 11px; }
 
   h1 { font-size: clamp(24px, 4vw, 36px); font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
   .sub { color: var(--dim); font-size: 14px; max-width: 64ch; line-height: 1.5; margin-top: 6px; }
@@ -250,7 +250,7 @@ function layout() {
   lastW = w;
   // Portrait phones need a tall box; a width-driven ratio collapses the map to a strip.
   const narrow = w < 600;
-  const h = Math.round(Math.min(w * (narrow ? 1.2 : 0.78), Math.max(120, fitHeight())));
+  const h = Math.round(Math.min(w * (narrow ? 1.2 : 0.92), Math.max(120, fitHeight())));
   const dpr = devicePixelRatio || 1;
   cv.width = w * dpr; cv.height = h * dpr;
   cv.style.height = h + "px";

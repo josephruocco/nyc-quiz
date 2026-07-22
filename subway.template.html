@@ -23,7 +23,7 @@
 
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--paper); color: var(--text); font-family: var(--display); -webkit-font-smoothing: antialiased; }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 20px 60px; display: flex; flex-direction: column; gap: 18px; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 16px 20px 40px; display: flex; flex-direction: column; gap: 11px; }
 
   h1 { font-size: clamp(24px, 4vw, 34px); font-weight: 700; letter-spacing: -0.03em; line-height: 1; margin: 0; }
   .sub { color: var(--dim); font-size: 14px; max-width: 62ch; line-height: 1.5; margin: 6px 0 0; }
@@ -33,7 +33,7 @@
   .prompt {
     display: grid; grid-template-columns: 1fr auto; align-items: center;
     row-gap: 10px; column-gap: 16px;
-    padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    padding: 10px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
   }
   .ask { grid-column: 1 / -1; display: flex; align-items: center; gap: 14px; min-height: 62px; }
   .askText { font-size: clamp(17px, 2.6vw, 24px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; text-wrap: balance; }

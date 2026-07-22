@@ -39,7 +39,7 @@
   }
 
   body { background: var(--paper); color: var(--text); font-family: var(--display); -webkit-font-smoothing: antialiased; }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 24px 20px 60px; display: flex; flex-direction: column; gap: 18px; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 16px 20px 40px; display: flex; flex-direction: column; gap: 11px; }
 
   h1 { font-size: clamp(24px, 4vw, 34px); font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
   .sub { color: var(--dim); font-size: 14px; max-width: 62ch; line-height: 1.5; margin-top: 6px; }
@@ -49,7 +49,7 @@
   .prompt {
     display: grid; grid-template-columns: 1fr auto; align-items: baseline;
     row-gap: 8px; column-gap: 16px;
-    padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    padding: 10px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
   }
   .target {
     grid-column: 1 / -1;
@@ -181,7 +181,7 @@ function layout() {
   lastW = w;
   // Portrait phones need a tall box; a width-driven ratio collapses the map to a strip.
   const narrow = w < 600;
-  const h = Math.round(Math.min(w * (narrow ? 1.2 : 0.72), Math.max(120, fitHeight())));
+  const h = Math.round(Math.min(w * (narrow ? 1.2 : 0.95), Math.max(120, fitHeight())));
   const dpr = devicePixelRatio || 1;
   cv.width = w * dpr; cv.height = h * dpr;
   cv.style.height = h + "px";
@@ -455,9 +455,19 @@ cv.addEventListener("touchend", () => { pinch = null; });
 // ---- borough filter
 // Changing the pool changes both the map and the questions, so there's no way to
 // keep a run going across a toggle — flipping one starts a fresh run.
+// A fixed, easy, spread-out run for recording a demo video: open ?demo. Eight
+// iconic neighborhoods, one bounce around the whole city, no adjacent repeats.
+const DEMO = [
+  "Astoria (Central)", "Coney Island-Sea Gate", "Harlem (North)", "Flushing-Willets Point",
+  "Financial District-Battery Park City", "Riverdale-Spuyten Duyvil", "Williamsburg", "St. George-New Brighton",
+];
+const isDemo = new URLSearchParams(location.search).has("demo");
+
 function restart() {
   POOL = HOODS.filter(h => active.has(h.b));
-  order = POOL.map(h => h).sort(() => Math.random() - 0.5).slice(0, ROUNDS);
+  order = isDemo
+    ? DEMO.map(n => HOODS.find(h => h.n === n)).filter(Boolean)
+    : POOL.map(h => h).sort(() => Math.random() - 0.5).slice(0, ROUNDS);
   round = 0; hits = 0; misses = []; guess = null; answered = false;
   zoom = 1; panX = 0; panY = 0;
   el("hits").textContent = "0";
