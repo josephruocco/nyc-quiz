@@ -116,6 +116,7 @@
     <span class="verdict" id="verdict"></span>
     <span class="detail" id="detail"></span>
     <button id="confirm" hidden>Confirm</button>
+    <button id="share" hidden>Challenge a friend</button>
     <button id="next" hidden>Next</button>
   </div>
 </div>
@@ -183,12 +184,27 @@ function toLonLat([sx, sy]) {
   return [minX + (bx - offX) / (KX * scale), maxY - (by - offY) / scale];
 }
 
+// Vertical space the canvas can take without pushing the row below it off screen.
+// Measure where the map starts (its distance from the document top, which the
+// canvas's own height doesn't affect) and reserve for the row beneath it — a stable
+// amount for the result, which grows once answered. Scroll-independent.
+function fitHeight() {
+  const stage = cv.closest(".stage");
+  const gap = parseFloat(getComputedStyle(cv.closest(".wrap")).rowGap) || 0;
+  const top = stage.getBoundingClientRect().top + window.scrollY;
+  const below = stage.nextElementSibling;
+  const reserve = below ? (below.classList.contains("result") ? 60 : below.offsetHeight) : 0;
+  return innerHeight - top - reserve - gap - 8;
+}
+
 function layout() {
   const w = cv.clientWidth;
   lastW = w;
   // The network is tall and narrow, more so on a portrait phone.
   const narrow = w < 600;
-  const h = Math.round(Math.min(w * (narrow ? 1.35 : 0.95), innerHeight * (narrow ? 0.68 : 0.74)));
+  // Fit the map and the Next/result row on one screen: cap the height at the space
+  // left in the viewport after the surrounding chrome, not a blind fraction of it.
+  const h = Math.round(Math.min(w * (narrow ? 1.35 : 0.95), Math.max(120, fitHeight())));
   const dpr = devicePixelRatio || 1;
   cv.width = w * dpr; cv.height = h * dpr;
   cv.style.height = h + "px";
@@ -345,6 +361,7 @@ function ask() {
     : `Which line serves ${target.n}?`;
   el("verdict").textContent = ""; el("detail").textContent = "";
   el("next").hidden = true;
+  if (el("share")) el("share").hidden = true;
   el("confirm").hidden = true;
   pendingPt = null;
   draw();
@@ -412,6 +429,8 @@ function finish() {
   el("next").hidden = false;
   el("next").textContent = "Play again";
   el("next").onclick = () => restart();
+  el("share").hidden = false;
+  el("share").onclick = () => window.shareChallenge(hits, order.length, "Pinpoint the Line");
   draw();
 }
 

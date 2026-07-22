@@ -52,7 +52,7 @@
   .target {
     grid-column: 1 / -1;
     font-size: clamp(19px, 3vw, 28px); font-weight: 700; letter-spacing: -0.02em;
-    line-height: 1.15; min-height: 3.45em; text-wrap: balance;
+    line-height: 1.15; min-height: 2.35em; text-wrap: balance;
   }
   .boro { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c, var(--dim)); }
   .stats { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 14px; color: var(--dim); }
@@ -131,6 +131,7 @@
     <span class="verdict" id="verdict"></span>
     <span class="detail" id="detail"></span>
     <button id="confirm" hidden>Confirm</button>
+    <button id="share" hidden>Challenge a friend</button>
     <button id="next" hidden>Next</button>
   </div>
 </div>
@@ -161,12 +162,25 @@ const ctx = cv.getContext("2d");
 let scale = 1, offX = 0, offY = 0;
 
 let lastW = 0;
+// Vertical space the canvas can take without pushing the row below it off screen.
+// Measure where the map starts (its distance from the document top, which the
+// canvas's own height doesn't affect) and reserve for the row beneath it — a stable
+// amount for the result, which grows once answered. Scroll-independent.
+function fitHeight() {
+  const stage = cv.closest(".stage");
+  const gap = parseFloat(getComputedStyle(cv.closest(".wrap")).rowGap) || 0;
+  const top = stage.getBoundingClientRect().top + window.scrollY;
+  const below = stage.nextElementSibling;
+  const reserve = below ? (below.classList.contains("result") ? 60 : below.offsetHeight) : 0;
+  return innerHeight - top - reserve - gap - 8;
+}
+
 function layout() {
   const w = cv.clientWidth;
   lastW = w;
   // Portrait phones need a tall box; a width-driven ratio collapses the map to a strip.
   const narrow = w < 600;
-  const h = Math.round(Math.min(w * (narrow ? 1.2 : 0.72), innerHeight * (narrow ? 0.66 : 0.62)));
+  const h = Math.round(Math.min(w * (narrow ? 1.2 : 0.72), Math.max(120, fitHeight())));
   const dpr = devicePixelRatio || 1;
   cv.width = w * dpr; cv.height = h * dpr;
   cv.style.height = h + "px";
@@ -283,6 +297,7 @@ function ask() {
   el("target").textContent = target.n;
   el("verdict").textContent = ""; el("detail").textContent = "";
   el("next").hidden = true;
+  if (el("share")) el("share").hidden = true;
   el("confirm").hidden = true;
   pending = null;
   draw();
@@ -298,6 +313,8 @@ function finish() {
   el("next").hidden = false;
   el("next").textContent = "Play again";
   el("next").onclick = () => location.reload();
+  el("share").hidden = false;
+  el("share").onclick = () => window.shareChallenge(hits, order.length, "Pinpoint the Neighborhood");
   draw();
 }
 

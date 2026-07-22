@@ -90,6 +90,7 @@
     <button class="act" id="check" disabled>Check</button>
     <span class="verdict" id="verdict"></span>
     <span class="detail" id="detail"></span>
+    <button class="act" id="share" hidden>Challenge a friend</button>
     <button class="act" id="next" hidden>Next</button>
   </div>
 </div>
@@ -171,6 +172,7 @@ function ask() {
   el("check").hidden = false;
   el("check").disabled = true;
   el("next").hidden = true;
+  if (el("share")) el("share").hidden = true;
 }
 
 function check() {
@@ -208,6 +210,8 @@ function finish() {
   el("check").hidden = true;
   el("next").hidden = false;
   el("next").textContent = "Play again";
+  el("share").hidden = false;
+  el("share").onclick = () => window.shareChallenge(hits, order.length, "Which Train?");
 }
 
 function restart() {

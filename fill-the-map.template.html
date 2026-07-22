@@ -231,12 +231,25 @@ let base = 1, baseX = 0, baseY = 0;   // fit-to-canvas projection
 let zoom = 1, panX = 0, panY = 0;     // user view on top of it
 let lastW = 0;
 
+// Vertical space the canvas can take without pushing the row below it off screen.
+// Measure where the map starts (its distance from the document top, which the
+// canvas's own height doesn't affect) and reserve for the tallies beneath it.
+// Scroll-independent.
+function fitHeight() {
+  const stage = cv.closest(".stage");
+  const gap = parseFloat(getComputedStyle(cv.closest(".wrap")).rowGap) || 0;
+  const top = stage.getBoundingClientRect().top + window.scrollY;
+  const below = stage.nextElementSibling;
+  const reserve = below ? below.offsetHeight : 0;
+  return innerHeight - top - reserve - gap - 8;
+}
+
 function layout() {
   const w = cv.clientWidth;
   lastW = w;
   // Portrait phones need a tall box; a width-driven ratio collapses the map to a strip.
   const narrow = w < 600;
-  const h = Math.round(Math.min(w * (narrow ? 1.2 : 0.78), innerHeight * (narrow ? 0.66 : 0.7)));
+  const h = Math.round(Math.min(w * (narrow ? 1.2 : 0.78), Math.max(120, fitHeight())));
   const dpr = devicePixelRatio || 1;
   cv.width = w * dpr; cv.height = h * dpr;
   cv.style.height = h + "px";

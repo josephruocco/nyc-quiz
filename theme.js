@@ -78,6 +78,21 @@
     .site-credit a { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--line); }
     .site-credit a:hover { border-bottom-color: var(--text); }
     .site-credit a:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+    /* A friend's challenge, shown at the top when the URL carries their score. */
+    .challenge {
+      margin: 0 0 4px; padding: 12px 16px; border: 1px solid var(--line); border-left: 4px solid var(--text);
+      border-radius: 2px; background: var(--panel); font-size: 14px; color: var(--text);
+    }
+    .challenge b { font-weight: 700; }
+    /* Toast confirming the link was copied. */
+    .toast {
+      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+      z-index: 20; padding: 10px 16px; border-radius: 4px; font: 500 13px/1 var(--display, sans-serif);
+      background: var(--text); color: var(--paper); box-shadow: 0 6px 20px rgba(0,0,0,.25);
+      opacity: 0; transition: opacity .18s;
+    }
+    .toast.show { opacity: 1; }
   `;
   document.head.appendChild(style);
 
@@ -138,6 +153,42 @@
   credit.appendChild(me);
   document.body.appendChild(credit);
 
+  // ---- challenge a friend
+  // A finished quiz builds a link back to itself carrying the score. Opening that
+  // link shows the score to beat; the game itself is whatever the page normally
+  // serves (a fresh round set), so "same quiz, beat my number".
+  const wrap = document.querySelector(".wrap");
+  const beat = new URLSearchParams(location.search).get("beat");
+  if (wrap && beat !== null && /^\d+$/.test(beat)) {
+    const banner = document.createElement("div");
+    banner.className = "challenge";
+    banner.innerHTML = `A friend scored <b>${beat}</b> here. Beat them.`;
+    wrap.insertBefore(banner, wrap.firstChild);
+  }
+
+  function toast(msg) {
+    const t = document.createElement("div");
+    t.className = "toast";
+    t.textContent = msg;
+    document.body.appendChild(t);
+    requestAnimationFrame(() => t.classList.add("show"));
+    setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 250); }, 2200);
+  }
+
+  // Called by a quiz's finish screen. Shares a link to this same quiz stamped with
+  // the score — native share sheet where available, clipboard otherwise.
+  window.shareChallenge = (score, total, label) => {
+    const url = location.origin + location.pathname + "?beat=" + score;
+    const text = `I scored ${score}/${total} on ${label}. Beat me:`;
+    if (navigator.share) {
+      navigator.share({ title: label, text, url }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(text + " " + url)
+        .then(() => toast("Challenge link copied"))
+        .catch(() => toast(url));
+    }
+  };
+
   // self-check
   // fixed on desktop, absolute under the mobile breakpoint — either keeps it out of flow.
   console.assert(/fixed|absolute/.test(getComputedStyle(box).position), "theme switch stays out of the layout");
@@ -157,4 +208,6 @@
     "the byline renders below the page content");
   console.assert(me.href === "https://josephruocco.net/", "the byline links out");
   console.assert(promo.href === "https://streetlore.nyc/", "the app promo links to StreetLore");
+  console.assert(typeof window.shareChallenge === "function", "quizzes can share a challenge");
+  console.assert(!beat || document.querySelector(".challenge"), "a ?beat link shows the challenge banner");
 })();
