@@ -179,8 +179,10 @@
   // Copy button and a caption, so it's plainly there to copy and send. Built once,
   // then reused; hidden again by hideShareBox() when a new run starts.
   let shareBox;
-  window.showShareBox = (score, total, label) => {
-    const url = location.origin + location.pathname + "?beat=" + score;
+  // extra is an optional query fragment (e.g. "boro=bk&lines=0") the quiz uses to
+  // carry its settings, so a friend opening the link plays the same mode.
+  window.showShareBox = (score, total, label, extra) => {
+    const url = location.origin + location.pathname + "?beat=" + score + (extra ? "&" + extra : "");
     if (!shareBox) {
       shareBox = document.createElement("div");
       shareBox.className = "share-box";

@@ -314,7 +314,7 @@ function finish() {
   el("next").hidden = false;
   el("next").textContent = "Play again";
   el("next").onclick = () => location.reload();
-  window.showShareBox && window.showShareBox(hits, order.length, "Pinpoint the Neighborhood");
+  window.showShareBox && window.showShareBox(hits, order.length, "Pinpoint the Neighborhood", shareParams());
   draw();
 }
 
@@ -468,6 +468,25 @@ const DEMO = [
 const isDemo = new URLSearchParams(location.search).has("demo");
 if (isDemo) { active.clear(); active.add("Brooklyn"); }   // frame Brooklyn only
 
+// Challenge links carry the sender's settings so a friend plays the same mode:
+// which boroughs, and whether boundaries were on. Short codes keep the URL tidy.
+const CODE = { "Manhattan": "mn", "Brooklyn": "bk", "Queens": "qn", "The Bronx": "bx", "Staten Island": "si" };
+const BORO_OF = Object.fromEntries(Object.entries(CODE).map(([b, c]) => [c, b]));
+const Q = new URLSearchParams(location.search);
+if (Q.has("boro")) {
+  const picked = Q.get("boro").split(",").map(c => BORO_OF[c]).filter(Boolean);
+  if (picked.length) { active.clear(); picked.forEach(b => active.add(b)); }
+}
+const startNoBoundaries = Q.get("lines") === "0";
+
+// The settings a challenge link should reproduce (omit the defaults: all boroughs, boundaries on).
+function shareParams() {
+  const parts = [];
+  if (active.size < BOROS.length) parts.push("boro=" + [...active].map(b => CODE[b]).join(","));
+  if (el("lines").getAttribute("aria-pressed") !== "true") parts.push("lines=0");
+  return parts.join("&");
+}
+
 function restart() {
   POOL = HOODS.filter(h => active.has(h.b));
   order = isDemo
@@ -497,6 +516,9 @@ for (const b of BOROS) {
   });
   el("boroOpts").appendChild(btn);
 }
+
+// A challenge link may ask to start with boundaries off, matching how the sender played.
+if (startNoBoundaries) el("lines").setAttribute("aria-pressed", "false");
 
 new ResizeObserver(() => { if (cv.clientWidth !== lastW) layout(); }).observe(cv);
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
