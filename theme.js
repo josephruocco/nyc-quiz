@@ -152,7 +152,7 @@
   const promo = document.createElement("a");
   promo.className = "promo";
   promo.href = "https://streetlore.nyc";
-  promo.textContent = "Live in New York? Download StreetLore NYC →";
+  promo.textContent = "Live in NYC? Download StreetLore for iOS →";
   credit.appendChild(promo);
 
   credit.append("Created by ");
