@@ -455,13 +455,18 @@ cv.addEventListener("touchend", () => { pinch = null; });
 // ---- borough filter
 // Changing the pool changes both the map and the questions, so there's no way to
 // keep a run going across a toggle — flipping one starts a fresh run.
-// A fixed, easy, spread-out run for recording a demo video: open ?demo. Eight
-// iconic neighborhoods, one bounce around the whole city, no adjacent repeats.
+// A fixed run for recording a demo video: open ?demo. Twenty recognizable
+// Brooklyn neighborhoods, spread north to south with no adjacent repeats, on a
+// map framed to Brooklyn alone.
 const DEMO = [
-  "Astoria (Central)", "Coney Island-Sea Gate", "Harlem (North)", "Flushing-Willets Point",
-  "Financial District-Battery Park City", "Riverdale-Spuyten Duyvil", "Williamsburg", "St. George-New Brighton",
+  "Williamsburg", "Coney Island-Sea Gate", "Brooklyn Heights", "Canarsie",
+  "Greenpoint", "Bay Ridge", "Bedford-Stuyvesant (West)", "Sheepshead Bay-Manhattan Beach-Gerritsen Beach",
+  "Bushwick (West)", "Park Slope", "Flatbush", "Fort Greene",
+  "Sunset Park (West)", "Crown Heights (North)", "Bensonhurst", "Prospect Heights",
+  "Brownsville", "Dyker Heights", "East New York (North)", "Brighton Beach",
 ];
 const isDemo = new URLSearchParams(location.search).has("demo");
+if (isDemo) { active.clear(); active.add("Brooklyn"); }   // frame Brooklyn only
 
 function restart() {
   POOL = HOODS.filter(h => active.has(h.b));
@@ -481,7 +486,7 @@ for (const b of BOROS) {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.dataset.boro = b;
-  btn.setAttribute("aria-pressed", "true");
+  btn.setAttribute("aria-pressed", String(active.has(b)));
   btn.style.setProperty("--bc", `var(${COLOR[b]})`);
   btn.textContent = b;
   btn.addEventListener("click", () => {
