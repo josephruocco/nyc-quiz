@@ -131,7 +131,6 @@
     <span class="verdict" id="verdict"></span>
     <span class="detail" id="detail"></span>
     <button id="confirm" hidden>Confirm</button>
-    <button id="share" hidden>Copy challenge link</button>
     <button id="next" hidden>Next</button>
   </div>
 </div>
@@ -297,7 +296,7 @@ function ask() {
   el("target").textContent = target.n;
   el("verdict").textContent = ""; el("detail").textContent = "";
   el("next").hidden = true;
-  if (el("share")) el("share").hidden = true;
+  window.hideShareBox && window.hideShareBox();
   el("confirm").hidden = true;
   pending = null;
   draw();
@@ -313,8 +312,7 @@ function finish() {
   el("next").hidden = false;
   el("next").textContent = "Play again";
   el("next").onclick = () => location.reload();
-  el("share").hidden = false;
-  el("share").onclick = () => window.shareChallenge(hits, order.length, "Pinpoint the Neighborhood");
+  window.showShareBox && window.showShareBox(hits, order.length, "Pinpoint the Neighborhood");
   draw();
 }
 

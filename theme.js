@@ -85,14 +85,23 @@
       border-radius: 2px; background: var(--panel); font-size: 14px; color: var(--text);
     }
     .challenge b { font-weight: 700; }
-    /* Toast confirming the link was copied. */
-    .toast {
-      position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
-      z-index: 20; padding: 10px 16px; border-radius: 4px; font: 500 13px/1 var(--display, sans-serif);
-      background: var(--text); color: var(--paper); box-shadow: 0 6px 20px rgba(0,0,0,.25);
-      opacity: 0; transition: opacity .18s;
+
+    /* The shareable link, shown on the finish screen. */
+    .share-box { margin: 4px 0 0; text-align: center; }
+    .share-box[hidden] { display: none; }
+    .share-cap { color: var(--dim); font-size: 14px; line-height: 1.5; margin: 0 0 10px; }
+    .share-row { display: flex; gap: 8px; max-width: 560px; margin: 0 auto; }
+    .share-url {
+      flex: 1; min-width: 0; font: 500 13px/1 var(--mono, monospace); color: var(--dim);
+      background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px;
+      text-overflow: ellipsis;
     }
-    .toast.show { opacity: 1; }
+    .share-copy {
+      flex: none; font: 700 13px/1 var(--display, sans-serif); color: var(--text);
+      background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 18px; cursor: pointer;
+    }
+    .share-copy:hover { border-color: var(--text); }
+    .share-copy:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
   `;
   document.head.appendChild(style);
 
@@ -166,27 +175,36 @@
     wrap.insertBefore(banner, wrap.firstChild);
   }
 
-  function toast(msg) {
-    const t = document.createElement("div");
-    t.className = "toast";
-    t.textContent = msg;
-    document.body.appendChild(t);
-    requestAnimationFrame(() => t.classList.add("show"));
-    setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 250); }, 2200);
-  }
-
-  // Called by a quiz's finish screen. Copies a link to this same quiz stamped with
-  // the score so it can be sent to a friend to beat. Always copies (predictable
-  // everywhere); on a phone it also offers the native share sheet as a shortcut.
-  window.shareChallenge = (score, total, label) => {
+  // Called by a quiz's finish screen. Shows the shareable link in a field with a
+  // Copy button and a caption, so it's plainly there to copy and send. Built once,
+  // then reused; hidden again by hideShareBox() when a new run starts.
+  let shareBox;
+  window.showShareBox = (score, total, label) => {
     const url = location.origin + location.pathname + "?beat=" + score;
-    const text = `I scored ${score}/${total} on ${label}. Beat me:`;
-    const full = text + " " + url;
-    (navigator.clipboard ? navigator.clipboard.writeText(full) : Promise.reject())
-      .then(() => toast("Link copied — send it to a friend to beat your score"))
-      .catch(() => prompt("Copy this link to challenge a friend:", full));
-    if (navigator.share) navigator.share({ title: label, text, url }).catch(() => {});
+    if (!shareBox) {
+      shareBox = document.createElement("div");
+      shareBox.className = "share-box";
+      shareBox.innerHTML =
+        `<p class="share-cap"></p>` +
+        `<div class="share-row"><input class="share-url" readonly aria-label="Challenge link">` +
+        `<button type="button" class="share-copy">Copy</button></div>`;
+      (document.querySelector(".wrap") || document.body).appendChild(shareBox);
+      const input = shareBox.querySelector(".share-url");
+      const btn = shareBox.querySelector(".share-copy");
+      btn.addEventListener("click", () => {
+        input.select();
+        (navigator.clipboard ? navigator.clipboard.writeText(input.value) : Promise.reject()).catch(() => {});
+        try { document.execCommand("copy"); } catch (e) {}   // fallback for older/insecure contexts
+        btn.textContent = "Copied";
+        setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+      });
+    }
+    shareBox.querySelector(".share-cap").textContent =
+      `Send this to a friend to see if they can beat your ${score}/${total}.`;
+    shareBox.querySelector(".share-url").value = url;
+    shareBox.hidden = false;
   };
+  window.hideShareBox = () => { if (shareBox) shareBox.hidden = true; };
 
   // self-check
   // fixed on desktop, absolute under the mobile breakpoint — either keeps it out of flow.
@@ -207,6 +225,6 @@
     "the byline renders below the page content");
   console.assert(me.href === "https://josephruocco.net/", "the byline links out");
   console.assert(promo.href === "https://streetlore.nyc/", "the app promo links to StreetLore");
-  console.assert(typeof window.shareChallenge === "function", "quizzes can share a challenge");
+  console.assert(typeof window.showShareBox === "function", "quizzes can show the challenge link");
   console.assert(!beat || document.querySelector(".challenge"), "a ?beat link shows the challenge banner");
 })();
