@@ -8,8 +8,9 @@
     --line: #DBD3C0;
     --text: #23201B;
     --dim: #6E6757;
-    --water: #E4DDC8;
-    --blank: #EBE5D4;
+    --water: #D8CFB8;
+    --blank: #F6F3EA;
+    --edge: #BBB095;
     --mn: #B65A1F;
     --bk: #1E7A6E;
     --qn: #4A5CB8;
@@ -21,18 +22,18 @@
   @media (prefers-color-scheme: dark) {
     :root {
       --paper: #171B18; --panel: #20261F; --line: #333B31; --text: #EFECE1;
-      --dim: #9C9585; --water: #12160F; --blank: #252C24;
+      --dim: #9C9585; --water: #0E120C; --blank: #272E25; --edge: #434C3F;
       --mn: #E8934F; --bk: #45B8A8; --qn: #8B9BEA; --bx: #E27BA0; --si: #B497E8;
     }
   }
   :root[data-theme="light"] {
     --paper: #F2EEE3; --panel: #EBE5D4; --line: #DBD3C0; --text: #23201B;
-    --dim: #6E6757; --water: #E4DDC8; --blank: #EBE5D4;
+    --dim: #6E6757; --water: #D8CFB8; --blank: #F6F3EA; --edge: #BBB095;
     --mn: #B65A1F; --bk: #1E7A6E; --qn: #4A5CB8; --bx: #A83A62; --si: #6D4AA6;
   }
   :root[data-theme="dark"] {
     --paper: #171B18; --panel: #20261F; --line: #333B31; --text: #EFECE1;
-    --dim: #9C9585; --water: #12160F; --blank: #252C24;
+    --dim: #9C9585; --water: #0E120C; --blank: #272E25; --edge: #434C3F;
     --mn: #E8934F; --bk: #45B8A8; --qn: #8B9BEA; --bx: #E27BA0; --si: #B497E8;
   }
 
@@ -289,8 +290,8 @@ function draw() {
     ctx.fillStyle = on ? cssVar(COLOR[hood.b]) + (hood.missed ? "44" : "cc") : blank;
     ctx.fill();
     if (showLines || on) {
-      ctx.strokeStyle = on ? cssVar(COLOR[hood.b]) : cssVar("--line");
-      ctx.lineWidth = on ? 1 : 0.7;
+      ctx.strokeStyle = on ? cssVar(COLOR[hood.b]) : cssVar("--edge");
+      ctx.lineWidth = on ? 1 : 0.9;
       ctx.stroke();
     }
   }
