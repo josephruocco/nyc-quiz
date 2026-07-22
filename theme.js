@@ -175,18 +175,17 @@
     setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 250); }, 2200);
   }
 
-  // Called by a quiz's finish screen. Shares a link to this same quiz stamped with
-  // the score — native share sheet where available, clipboard otherwise.
+  // Called by a quiz's finish screen. Copies a link to this same quiz stamped with
+  // the score so it can be sent to a friend to beat. Always copies (predictable
+  // everywhere); on a phone it also offers the native share sheet as a shortcut.
   window.shareChallenge = (score, total, label) => {
     const url = location.origin + location.pathname + "?beat=" + score;
     const text = `I scored ${score}/${total} on ${label}. Beat me:`;
-    if (navigator.share) {
-      navigator.share({ title: label, text, url }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(text + " " + url)
-        .then(() => toast("Challenge link copied"))
-        .catch(() => toast(url));
-    }
+    const full = text + " " + url;
+    (navigator.clipboard ? navigator.clipboard.writeText(full) : Promise.reject())
+      .then(() => toast("Link copied — send it to a friend to beat your score"))
+      .catch(() => prompt("Copy this link to challenge a friend:", full));
+    if (navigator.share) navigator.share({ title: label, text, url }).catch(() => {});
   };
 
   // self-check
