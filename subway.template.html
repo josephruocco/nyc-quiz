@@ -411,7 +411,6 @@ function place(sx, sy) {
   el("next").hidden = false;
   el("next").textContent = round + 1 >= order.length ? "See results" : "Next";
   el("next").onclick = () => { round++; ask(); };
-  el("next").focus();
   draw();
 }
 
@@ -477,6 +476,15 @@ cv.addEventListener("wheel", e => {
 el("zoomIn").addEventListener("click", () => zoomAt(1.5, cv.clientWidth / 2, parseFloat(cv.style.height) / 2));
 el("zoomOut").addEventListener("click", () => zoomAt(1 / 1.5, cv.clientWidth / 2, parseFloat(cv.style.height) / 2));
 el("reset").addEventListener("click", () => { zoom = 1; panX = panY = 0; draw(); });
+
+// Enter or Space advances (Confirm the pending pick, else Next). The button still
+// works; skip when a button has focus so its native activation isn't doubled.
+addEventListener("keydown", e => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  if (e.target.tagName === "BUTTON" || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+  const btn = !el("confirm").hidden ? el("confirm") : (!el("next").hidden ? el("next") : null);
+  if (btn) { e.preventDefault(); btn.click(); }
+});
 
 // A drag pans; a press that barely moves is a guess.
 const SLOP = 4;

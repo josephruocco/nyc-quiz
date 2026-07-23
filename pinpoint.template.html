@@ -349,7 +349,6 @@ function place(sx, sy) {
   el("next").hidden = false;
   el("next").textContent = round + 1 >= order.length ? "See results" : "Next";
   el("next").onclick = () => { round++; ask(); };
-  el("next").focus();
   draw();
 }
 
@@ -383,6 +382,16 @@ el("reset").addEventListener("click", () => { zoom = 1; panX = panY = 0; draw();
 el("lines").addEventListener("click", () => {
   el("lines").setAttribute("aria-pressed", String(el("lines").getAttribute("aria-pressed") !== "true"));
   draw();
+});
+
+// Enter or Space advances (Confirm the pending guess, else Next). The button still
+// works; this just saves the reach to it. Skip when a button already has focus, so
+// its own native activation isn't doubled.
+addEventListener("keydown", e => {
+  if (e.key !== "Enter" && e.key !== " ") return;
+  if (e.target.tagName === "BUTTON" || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+  const btn = !el("confirm").hidden ? el("confirm") : (!el("next").hidden ? el("next") : null);
+  if (btn) { e.preventDefault(); btn.click(); }
 });
 
 // A drag pans; a press that barely moves is a guess. Without the slop threshold
