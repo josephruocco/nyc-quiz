@@ -115,3 +115,6 @@ body:not(.menu-page) .setup,body:not(.menu-page) #startBtn,body:not(.menu-page) 
 .knicks-signoff { margin:18px 0 0; font:italic 14px/1.5 var(--display); color:var(--text); }
 
 .hero .hero-cta { margin-top:24px; }
+
+.game-tag { font:700 clamp(17px,1.9vw,23px)/1.15 "Overpass",var(--display); letter-spacing:.01em; }
+.card-top { align-items:center; }
