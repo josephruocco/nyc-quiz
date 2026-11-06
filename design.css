@@ -113,3 +113,5 @@ body:not(.menu-page) .setup,body:not(.menu-page) #startBtn,body:not(.menu-page) 
 @media(max-width:700px) { .hero .eyebrow { font-size:15px; margin-top:16px; }.city-strip { gap:14px; padding:12px 15px; }.city-strip b { text-align:center; }.city-strip span { text-align:center; } }
 
 .knicks-signoff { margin:18px 0 0; font:italic 14px/1.5 var(--display); color:var(--text); }
+
+.hero .hero-cta { margin-top:24px; }
