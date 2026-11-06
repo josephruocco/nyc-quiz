@@ -104,10 +104,10 @@
   button[hidden] { display: none; }
 </style>
 
-<div class="wrap">
+<div class="wrap map-quiz-wrap">
   <header>
     <h1>Pinpoint the Neighborhood</h1>
-    <p class="sub">Click where you think the named neighborhood sits. Scroll to zoom, drag to pan, and turn the boundaries off if you want it harder. 20 rounds.</p>
+    <p class="sub">Find the named neighborhood. Tap to place a marker, adjust it, then confirm. Pinch or use + to zoom. 20 rounds.</p>
   </header>
 
   <div class="prompt">
@@ -118,18 +118,20 @@
 
   <div class="opts" id="boroOpts" role="group" aria-label="Boroughs included"></div>
 
-  <div class="opts">
+  <div class="opts map-controls">
     <button id="lines" aria-pressed="true">Boundaries</button>
     <span class="spacer"></span>
     <button id="zoomOut" aria-label="Zoom out">&minus;</button>
     <span class="zoomlvl" id="zoomlvl">1.0&times;</span>
     <button id="zoomIn" aria-label="Zoom in">+</button>
     <button id="reset">Reset view</button>
+    <button id="boroughView">Borough view</button>
+    <button id="expandMap" aria-pressed="false">Expand map</button>
   </div>
 
-  <div class="stage"><canvas id="map" aria-label="Map of NYC neighborhood boundaries. Click to place your guess, drag to pan, scroll to zoom."></canvas></div>
+  <div class="stage"><canvas id="map" aria-label="Map of NYC neighborhood boundaries. Tap to preview a guess, then confirm. Drag to pan, pinch or use the zoom buttons."></canvas></div>
 
-  <div class="result">
+  <div class="result" aria-live="polite">
     <span class="verdict" id="verdict"></span>
     <span class="detail" id="detail"></span>
     <button id="confirm" hidden>Confirm</button>
@@ -181,7 +183,10 @@ function layout() {
   lastW = w;
   // Portrait phones need a tall box; a width-driven ratio collapses the map to a strip.
   const narrow = w < 600;
-  const h = Math.round(Math.min(w * (narrow ? 1.2 : 0.95), Math.max(120, fitHeight())));
+  const expanded = document.body.classList.contains("map-expanded");
+  const h = Math.round(expanded ? Math.max(120, cv.closest(".stage").clientHeight - 4)
+    : narrow ? Math.max(340, Math.min(w * 1.2, fitHeight()))
+    : Math.min(w * 0.95, Math.max(120, fitHeight())));
   const dpr = devicePixelRatio || 1;
   cv.width = w * dpr; cv.height = h * dpr;
   cv.style.height = h + "px";
@@ -201,9 +206,8 @@ const px = ([x, y]) => [
 
 // guess is kept in lon/lat, not screen pixels: the player can zoom and pan after
 // answering, and the dot has to stay on the spot they actually clicked.
-// On touch you cannot see under your own fingertip, so a tap does not commit.
+// A tap or click previews a marker before committing the answer.
 // It drops a marker you can drag and check against the map, then confirm.
-const TOUCH = matchMedia("(pointer: coarse)").matches;
 let pending = null, markerDrag = false;
 let round = 0, hits = 0, misses = [], target = null, guess = null, answered = false, inside = false;
 let order = [];
@@ -398,13 +402,23 @@ addEventListener("keydown", e => {
 // every pan would also drop a pin wherever the drag ended.
 const SLOP = 4;
 let drag = null;
+const mapPointers = new Set();
+let multiTouch = false;
 cv.addEventListener("pointerdown", e => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  mapPointers.add(e.pointerId);
+  if (mapPointers.size > 1) {
+    multiTouch = true; drag = null; markerDrag = false;
+    cv.classList.remove("dragging");
+    return;
+  }
+  if (multiTouch) return;
   const r = cv.getBoundingClientRect();
   const sx = e.clientX - r.left, sy = e.clientY - r.top;
-  if (TOUCH && pending && !answered) {
+  if (pending && !answered) {
     const [mx, my] = px(pending);
     if (Math.hypot(sx - mx, sy - my) <= 36) {   // grabbed the marker, not the map
-      markerDrag = true;
+      markerDrag = { dx: mx - sx, dy: my - sy };
       cv.setPointerCapture(e.pointerId);
       return;
     }
@@ -413,9 +427,10 @@ cv.addEventListener("pointerdown", e => {
   cv.setPointerCapture(e.pointerId);
 });
 cv.addEventListener("pointermove", e => {
+  if (multiTouch) return;
   if (markerDrag) {
     const r = cv.getBoundingClientRect();
-    pending = toLonLat([e.clientX - r.left, e.clientY - r.top]);
+    pending = toLonLat([e.clientX - r.left + markerDrag.dx, e.clientY - r.top + markerDrag.dy]);
     draw();
     return;
   }
@@ -430,34 +445,52 @@ cv.addEventListener("pointermove", e => {
   draw();
 });
 cv.addEventListener("pointerup", e => {
+  mapPointers.delete(e.pointerId);
+  if (multiTouch) { if (!mapPointers.size) multiTouch = false; return; }
   if (markerDrag) { markerDrag = false; return; }
-  const wasDrag = drag && drag.moved;
+  if (!drag) return;
+  const wasDrag = drag.moved;
   drag = null;
   cv.classList.remove("dragging");
   if (wasDrag) return;
   const r = cv.getBoundingClientRect();
   const sx = e.clientX - r.left, sy = e.clientY - r.top;
-  if (!TOUCH) return place(sx, sy);
   if (answered) return;
   pending = toLonLat([sx, sy]);          // adjust it, then confirm
   el("confirm").hidden = false;
   el("detail").textContent = "Drag the marker to adjust, then confirm.";
   draw();
 });
-cv.addEventListener("pointercancel", () => { drag = null; cv.classList.remove("dragging"); });
+cv.addEventListener("pointercancel", e => {
+  mapPointers.delete(e.pointerId); multiTouch = mapPointers.size > 0;
+  drag = null; markerDrag = false;
+  cv.classList.remove("dragging");
+});
 
 // pinch
 let pinch = null;
+let pinchCenter = null;
+cv.addEventListener("touchstart", e => {
+  if (e.touches.length !== 2) return;
+  const [a, b] = e.touches, r = cv.getBoundingClientRect();
+  pinch = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  pinchCenter = [(a.clientX + b.clientX) / 2 - r.left, (a.clientY + b.clientY) / 2 - r.top];
+}, { passive: true });
 cv.addEventListener("touchmove", e => {
   if (e.touches.length !== 2) return;
   e.preventDefault();
   const [a, b] = e.touches;
   const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
   const r = cv.getBoundingClientRect();
-  if (pinch) zoomAt(d / pinch, (a.clientX + b.clientX) / 2 - r.left, (a.clientY + b.clientY) / 2 - r.top);
-  pinch = d;
+  const center = [(a.clientX + b.clientX) / 2 - r.left, (a.clientY + b.clientY) / 2 - r.top];
+  if (pinch && pinchCenter) {
+    zoomAt(d / pinch, pinchCenter[0], pinchCenter[1]);
+    panX += center[0] - pinchCenter[0]; panY += center[1] - pinchCenter[1];
+    clampPan(); draw();
+  }
+  pinch = d; pinchCenter = center;
 }, { passive: false });
-cv.addEventListener("touchend", () => { pinch = null; });
+for (const event of ["touchend", "touchcancel"]) cv.addEventListener(event, () => { pinch = null; pinchCenter = null; });
 
 // Not window "resize": the canvas also changes width when the page scrollbar comes
 // and goes, and a stale projection makes clicks land off from what's drawn.
@@ -532,6 +565,33 @@ if (startNoBoundaries) el("lines").setAttribute("aria-pressed", "false");
 new ResizeObserver(() => { if (cv.clientWidth !== lastW) layout(); }).observe(cv);
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
 restart();
+
+
+// Keep the prompt, zoom controls, and confirmation visible in the expanded map.
+const expandButton = el("expandMap");
+expandButton.addEventListener("click", () => {
+  const expanded = document.body.classList.toggle("map-expanded");
+  expandButton.textContent = expanded ? "Exit map" : "Expand map";
+  expandButton.setAttribute("aria-pressed", String(expanded));
+  requestAnimationFrame(layout);
+});
+addEventListener("keydown", e => {
+  if (e.key === "Escape" && document.body.classList.contains("map-expanded")) expandButton.click();
+});
+addEventListener("resize", () => requestAnimationFrame(layout));
+
+el("boroughView").addEventListener("click", () => {
+  if (!target) return;
+  let x0=Infinity, x1=-Infinity, y0=Infinity, y1=-Infinity;
+  for (const h of POOL.filter(h => h.b === target.b)) for (const ring of h.p) for (const [x,y] of ring) {
+    const sx=offX+(x-minX)*KX*scale, sy=offY+(maxY-y)*scale;
+    x0=Math.min(x0,sx); x1=Math.max(x1,sx); y0=Math.min(y0,sy); y1=Math.max(y1,sy);
+  }
+  const w=cv.clientWidth, h=parseFloat(cv.style.height);
+  zoom=Math.max(1,Math.min(12,(w-36)/(x1-x0),(h-36)/(y1-y0)));
+  panX=w/2-(x0+x1)/2*zoom; panY=h/2-(y0+y1)/2*zoom;
+  clampPan(); draw();
+});
 
 // self-check
 console.assert(HOODS.length > 150, "neighborhoods loaded");

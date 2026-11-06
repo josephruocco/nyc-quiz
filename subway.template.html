@@ -88,10 +88,10 @@
   .zoomlvl { font-family: var(--mono); font-size: 12px; color: var(--dim); min-width: 3.4em; text-align: right; }
 </style>
 
-<div class="wrap">
+<div class="wrap map-quiz-wrap">
   <header>
     <h1>Pinpoint the Line</h1>
-    <p class="sub">Every subway line is drawn, none are labeled. Hover to pick out a line, then click it. You don't need the exact station, just the right strand. 20 rounds.</p>
+    <p class="sub">Find the train on the map. Tap a line to preview it, then confirm. Pinch or use + to zoom. 20 rounds.</p>
   </header>
 
   <div class="prompt">
@@ -100,7 +100,7 @@
     <span class="stats"><b id="hits">0</b> right &middot; avg miss <b id="avg">n/a</b></span>
   </div>
 
-  <div class="opts">
+  <div class="opts map-controls">
     <button id="modeLine" aria-pressed="true">Name a train</button>
     <button id="modeStop" aria-pressed="false">Hard: name a stop</button>
     <span class="spacer"></span>
@@ -108,11 +108,12 @@
     <span class="zoomlvl" id="zoomlvl">1.0&times;</span>
     <button id="zoomIn" aria-label="Zoom in">+</button>
     <button id="reset">Reset view</button>
+    <button id="expandMap" aria-pressed="false">Expand map</button>
   </div>
 
-  <div class="stage"><canvas id="map" aria-label="Map of the NYC subway network. Click along a line to answer, drag to pan, scroll to zoom."></canvas></div>
+  <div class="stage"><canvas id="map" aria-label="Map of the NYC subway network. Tap a line to preview it, then confirm. Drag to pan, pinch or use the zoom buttons."></canvas></div>
 
-  <div class="result">
+  <div class="result" aria-live="polite">
     <span class="verdict" id="verdict"></span>
     <span class="detail" id="detail"></span>
     <button id="confirm" hidden>Confirm</button>
@@ -203,7 +204,10 @@ function layout() {
   const narrow = w < 600;
   // Fit the map and the Next/result row on one screen: cap the height at the space
   // left in the viewport after the surrounding chrome, not a blind fraction of it.
-  const h = Math.round(Math.min(w * (narrow ? 1.35 : 0.95), Math.max(120, fitHeight())));
+  const expanded = document.body.classList.contains("map-expanded");
+  const h = Math.round(expanded ? Math.max(120, cv.closest(".stage").clientHeight - 4)
+    : narrow ? Math.max(340, Math.min(w * 1.35, fitHeight()))
+    : Math.min(w * 0.95, Math.max(120, fitHeight())));
   const dpr = devicePixelRatio || 1;
   cv.width = w * dpr; cv.height = h * dpr;
   cv.style.height = h + "px";
@@ -271,9 +275,8 @@ function routesAt(sx, sy) {
 }
 
 // ---- state
-// On touch there is no hover, and you cannot see the line under your fingertip.
+// Preview a line before committing, including on devices without hover.
 // A tap previews which line it grabbed; you confirm or tap somewhere else.
-const TOUCH = matchMedia("(pointer: coarse)").matches;
 let pendingPt = null;
 let round = 0, hits = 0, misses = [], target = null, answers = [], guess = null,
     answered = false, best = null, mode = "line", picked = null, hover = null;
@@ -356,7 +359,7 @@ function ask() {
   el("round").textContent = `Round ${round + 1} of ${order.length}`;
   el("askBullet").replaceChildren(mode === "line" ? bullet(target.r) : "");
   el("askText").textContent = mode === "line"
-    ? "Click anywhere this train runs"
+    ? "Find where this train runs"
     : `Which line serves ${target.n}?`;
   el("verdict").textContent = ""; el("detail").textContent = "";
   el("next").hidden = true;
@@ -368,7 +371,7 @@ function ask() {
 
 el("confirm").addEventListener("click", () => {
   if (!pendingPt || answered) return;
-  const [sx, sy] = pendingPt;
+  const [sx, sy] = px(pendingPt);
   el("confirm").hidden = true;
   place(sx, sy);
 });
@@ -489,7 +492,17 @@ addEventListener("keydown", e => {
 // A drag pans; a press that barely moves is a guess.
 const SLOP = 4;
 let drag = null;
+const mapPointers = new Set();
+let multiTouch = false;
 cv.addEventListener("pointerdown", e => {
+  if (e.pointerType === "mouse" && e.button !== 0) return;
+  mapPointers.add(e.pointerId);
+  if (mapPointers.size > 1) {
+    multiTouch = true; drag = null;
+    cv.classList.remove("dragging");
+    return;
+  }
+  if (multiTouch) return;
   drag = { x: e.clientX, y: e.clientY, px: panX, py: panY, moved: false };
   cv.setPointerCapture(e.pointerId);
 });
@@ -500,7 +513,7 @@ function updateHover(sx, sy) {
   hoverQueued = true;
   requestAnimationFrame(() => {
     hoverQueued = false;
-    if (answered || drag) return;
+    if (answered || drag || pendingPt) return;
     const under = routesAt(sx, sy);
     const next = under.length ? under[0].route : null;
     if (next === hover) return;
@@ -511,6 +524,7 @@ function updateHover(sx, sy) {
 }
 
 cv.addEventListener("pointermove", e => {
+  if (multiTouch) return;
   const r = cv.getBoundingClientRect();
   if (!drag) return updateHover(e.clientX - r.left, e.clientY - r.top);
   const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
@@ -521,15 +535,17 @@ cv.addEventListener("pointermove", e => {
   clampPan();
   draw();
 });
-cv.addEventListener("pointerleave", () => { if (hover) { hover = null; draw(); } });
+cv.addEventListener("pointerleave", () => { if (hover && !pendingPt) { hover = null; draw(); } });
 cv.addEventListener("pointerup", e => {
-  const wasDrag = drag && drag.moved;
+  mapPointers.delete(e.pointerId);
+  if (multiTouch) { if (!mapPointers.size) multiTouch = false; return; }
+  if (!drag) return;
+  const wasDrag = drag.moved;
   drag = null;
   cv.classList.remove("dragging");
   if (wasDrag) return;
   const r = cv.getBoundingClientRect();
   const sx = e.clientX - r.left, sy = e.clientY - r.top;
-  if (!TOUCH) return place(sx, sy);
   if (answered) return;
   const under = routesAt(sx, sy);
   if (!under.length) {
@@ -540,25 +556,55 @@ cv.addEventListener("pointerup", e => {
     draw();
     return;
   }
-  pendingPt = [sx, sy];
+  pendingPt = toLonLat([sx, sy]);
   hover = under[0].route;                 // show what the tap grabbed
   el("confirm").hidden = false;
   el("detail").textContent = "That line is highlighted. Confirm, or tap another.";
   draw();
 });
-cv.addEventListener("pointercancel", () => { drag = null; cv.classList.remove("dragging"); });
+cv.addEventListener("pointercancel", e => {
+  mapPointers.delete(e.pointerId); multiTouch = mapPointers.size > 0;
+  drag = null;
+  cv.classList.remove("dragging");
+});
 
 let pinch = null;
+let pinchCenter = null;
+cv.addEventListener("touchstart", e => {
+  if (e.touches.length !== 2) return;
+  const [a, b] = e.touches, r = cv.getBoundingClientRect();
+  pinch = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+  pinchCenter = [(a.clientX + b.clientX) / 2 - r.left, (a.clientY + b.clientY) / 2 - r.top];
+}, { passive: true });
 cv.addEventListener("touchmove", e => {
   if (e.touches.length !== 2) return;
   e.preventDefault();
   const [a, b] = e.touches;
   const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
   const r = cv.getBoundingClientRect();
-  if (pinch) zoomAt(d / pinch, (a.clientX + b.clientX) / 2 - r.left, (a.clientY + b.clientY) / 2 - r.top);
-  pinch = d;
+  const center = [(a.clientX + b.clientX) / 2 - r.left, (a.clientY + b.clientY) / 2 - r.top];
+  if (pinch && pinchCenter) {
+    zoomAt(d / pinch, pinchCenter[0], pinchCenter[1]);
+    panX += center[0] - pinchCenter[0]; panY += center[1] - pinchCenter[1];
+    clampPan(); draw();
+  }
+  pinch = d; pinchCenter = center;
 }, { passive: false });
-cv.addEventListener("touchend", () => { pinch = null; });
+for (const event of ["touchend", "touchcancel"]) cv.addEventListener(event, () => { pinch = null; pinchCenter = null; });
+
+
+// Keep the prompt, zoom controls, and confirmation visible in the expanded map.
+const expandButton = el("expandMap");
+expandButton.addEventListener("click", () => {
+  const expanded = document.body.classList.toggle("map-expanded");
+  expandButton.textContent = expanded ? "Exit map" : "Expand map";
+  expandButton.setAttribute("aria-pressed", String(expanded));
+  requestAnimationFrame(layout);
+});
+addEventListener("keydown", e => {
+  if (e.key === "Escape" && document.body.classList.contains("map-expanded")) expandButton.click();
+});
+addEventListener("resize", () => requestAnimationFrame(layout));
 
 new ResizeObserver(() => { if (cv.clientWidth !== lastW) layout(); }).observe(cv);
 matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);

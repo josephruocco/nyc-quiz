@@ -120,3 +120,37 @@ body:not(.menu-page) .setup,body:not(.menu-page) #startBtn,body:not(.menu-page) 
 .card-top { align-items:center; }
 
 .situationship { font-size:14px; line-height:1.5; max-width:34ch; margin:18px 0 0; color:var(--dim); }
+
+/* Phone controls and a dedicated map view for accurate fingertip placement. */
+body:not(.menu-page) button:not([hidden]),body:not(.menu-page) .theme-pick a.home { min-height:44px!important; }
+body:not(.menu-page) button:not([hidden]) { min-width:44px; }
+#confirm { background:#f4c433; color:#171917; border:2px solid #171917; font-weight:800; }
+.result button { order:-1; }
+@media(max-width:700px) {
+ body:not(.menu-page) { padding-top:0; }
+ body:not(.menu-page) .wrap { padding-top:74px; }
+ body:not(.menu-page) header { padding-top:14px; border-top-width:5px; margin-bottom:2px; }
+ body:not(.menu-page) h1 { font-size:27px; line-height:1.07; }
+ body:not(.menu-page) .sub { font-size:13px; line-height:1.45; margin:9px 0 8px; }
+ .map-quiz-wrap .map-controls { order:1; gap:6px; }
+ .map-quiz-wrap .map-controls button { padding:10px; font-size:10px; }
+ .map-quiz-wrap .map-controls .spacer { display:none; }
+ .map-quiz-wrap .map-controls .zoomlvl { min-width:2.7em; }
+ .map-quiz-wrap .result { min-height:56px; gap:8px; }
+ .map-quiz-wrap .result .detail { font-size:12px; }
+}
+body.map-expanded { overflow:hidden; }
+body.map-expanded > .wrap { position:fixed; inset:0; z-index:30; width:100%; max-width:none; height:100dvh; padding: max(10px,env(safe-area-inset-top)) 12px max(10px,env(safe-area-inset-bottom)); gap:8px; background:var(--paper); overflow:auto; }
+body.map-expanded .wrap>header,body.map-expanded #boroOpts,body.map-expanded>.theme-pick,body.map-expanded>.site-credit,body.map-expanded>.streetscape { display:none; }
+body.map-expanded .prompt { order:0; padding:8px 0; row-gap:5px; }
+body.map-expanded .target { min-height:2.3em; font-size:20px; }
+body.map-expanded .map-controls { order:1; }
+body.map-expanded .stage { order:2; flex:1 0 140px; min-height:140px; contain:size; }
+body.map-expanded .result { order:3; flex:none; min-height:56px; }
+body.map-expanded .stats { font-size:12px; }
+
+:root,:root[data-theme="light"] { --land:#fff9e9; --rail:#687f78; }
+@media(prefers-color-scheme:dark) { :root:not([data-theme="light"]) { --land:#2b3f49; --rail:#9bb1b8; } }
+:root[data-theme="dark"] { --land:#2b3f49; --rail:#9bb1b8; }
+
+body.map-expanded .map-controls button { font-size:10px; padding:9px 8px; letter-spacing:.03em; }
