@@ -154,3 +154,5 @@ body.map-expanded .stats { font-size:12px; }
 :root[data-theme="dark"] { --land:#2b3f49; --rail:#9bb1b8; }
 
 body.map-expanded .map-controls button { font-size:10px; padding:9px 8px; letter-spacing:.03em; }
+
+.section-heading { justify-content:center; text-align:center; }
