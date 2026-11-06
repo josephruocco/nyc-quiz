@@ -160,6 +160,12 @@
   me.href = "https://josephruocco.net";
   me.textContent = "Joseph Ruocco";
   credit.appendChild(me);
+  if (onMenu) {
+    const signoff = document.createElement("p");
+    signoff.className = "knicks-signoff";
+    signoff.textContent = "Knicks in five.";
+    credit.appendChild(signoff);
+  }
   document.body.appendChild(credit);
 
   const street = document.createElement("div");
