@@ -162,6 +162,12 @@
   credit.appendChild(me);
   document.body.appendChild(credit);
 
+  const street = document.createElement("div");
+  street.className = "streetscape";
+  street.setAttribute("aria-hidden", "true");
+  street.innerHTML = /*STREETSCAPE*/;
+  document.body.insertBefore(street, credit);
+
   // ---- challenge a friend
   // A finished quiz builds a link back to itself carrying the score. Opening that
   // link shows the score to beat; the game itself is whatever the page normally
