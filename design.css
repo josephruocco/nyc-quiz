@@ -118,3 +118,5 @@ body:not(.menu-page) .setup,body:not(.menu-page) #startBtn,body:not(.menu-page) 
 
 .game-tag { font:700 clamp(17px,1.9vw,23px)/1.15 "Overpass",var(--display); letter-spacing:.01em; }
 .card-top { align-items:center; }
+
+.situationship { font-size:14px; line-height:1.5; max-width:34ch; margin:18px 0 0; color:var(--dim); }
