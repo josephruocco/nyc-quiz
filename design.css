@@ -62,3 +62,44 @@ a.game:hover { transform:translate(-2px,-4px); box-shadow:6px 8px 0 var(--text);
 .streetscape { overflow:hidden; margin:34px auto 0; width:100%; }
 .streetscape svg { display:block; width:100%; min-width:900px; max-height:290px; position:relative; left:50%; transform:translateX(-50%); }
 .site-credit { border-top:0; }
+
+/* Flat print treatments, with the city illustration doing the decorative work. */
+.brand-bullet { width:auto; height:auto; border-radius:0; background:transparent; color:var(--text); font-size:25px; letter-spacing:-1.5px; }
+.wordmark { gap:6px; letter-spacing:-1.4px; font-size:25px; }
+.city-art { background:none; }
+.hero h1 { font-weight:800; }
+.hero-desc { font-size:17px; }
+.hero-cta { box-shadow:none; border:0; border-radius:3px; padding:15px 23px; }
+.hero-cta:hover { transform:none; box-shadow:none; background:#e6b426; }
+.games { grid-template-columns:repeat(2,1fr); gap:20px; }
+a.game { box-shadow:none; border:0; border-radius:3px; min-height:265px; padding:25px 28px; }
+a.game:hover { box-shadow:none; transform:translateY(-3px); }
+.game-featured { grid-column:1/-1; grid-row:auto; display:grid!important; grid-template-columns:1.2fr 1fr; column-gap:50px; }
+.game-featured .card-top { grid-column:1; }
+.game-featured .card-copy { grid-column:1; padding:24px 0 0; }
+.game-featured .card-art { grid-column:2; grid-row:1/4; margin:0; }
+.game-featured .card-meta { grid-column:1; }
+.card-copy { padding-top:26px; }
+.card-copy h3 { font-size:32px; line-height:1.07; }
+.game-featured h3 { font-size:38px; }
+.card-copy p,.game-featured .card-copy p { font-size:15px; max-width:44ch; }
+.card-copy h3 br { display:none; }
+.card-arrow { display:none; }
+.game-tag { font-size:9px; }
+.card-meta { font-size:9px; opacity:.85; margin-top:22px; padding-top:16px; }
+.route-bullet { width:27px; height:27px; font-size:16px; }
+.play-label { justify-content:flex-start; gap:12px; font-size:13px; font-family:var(--display); text-transform:none; }
+.play-label span { font-size:18px; }
+.neighborhood-count { display:flex; flex-direction:column; justify-content:center; align-items:center; height:auto; font-weight:800; font-size:clamp(90px,14vw,170px); letter-spacing:-.08em; line-height:1; }
+.neighborhood-count span { font:10px/1.5 var(--mono); letter-spacing:.09em; padding-top:10px; }
+.knick-note { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:15px 35px; border-top:2px solid var(--text); padding:32px 0 12px; }
+.knick-heading { font-size:38px; font-weight:800; letter-spacing:-.05em; }
+.knick-heading em { font-style:normal; color:#d24c25; }
+.knick-note p { font-size:15px; line-height:1.6; margin:0; }
+.knick-note a { grid-column:2; color:var(--text); font-size:13px; text-underline-offset:4px; }
+body:not(.menu-page) .setup,body:not(.menu-page) #startBtn,body:not(.menu-page) #check:not(:disabled),body:not(.menu-page) #next { box-shadow:none; }
+@media(max-width:700px) { .games { grid-template-columns:1fr; gap:15px; } a.game { padding:23px; min-height:255px; }.game-featured { grid-column:1; grid-template-columns:1fr!important; }.game-featured .card-art { grid-row:auto; grid-column:1; align-items:flex-start; font-size:96px; padding:20px 0 0; }.game-featured .card-copy { padding-top:24px; }.game-featured .card-meta { grid-column:1; }.game-featured h3 { font-size:32px; }.card-copy h3 { font-size:29px; }.knick-note { grid-template-columns:1fr; gap:14px; }.knick-heading { font-size:35px; }.knick-note a { grid-column:1; }.hero-desc { font-size:16px; }.brand-bullet,.wordmark { font-size:23px; }.masthead { min-height:78px; } }
+
+.theme-pick { position:absolute; }
+
+.city-art { overflow:hidden; border-radius:0; }

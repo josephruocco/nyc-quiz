@@ -23,7 +23,7 @@ const WITH_EGG = process.env.PENGUIN === "1";
 
 const wrap = f => `\n<script>\n${fs.readFileSync(f, "utf8")}</script>\n`;
 const design = `\n<style>\n${fs.readFileSync("design.css", "utf8")}</style>\n`;
-const theme = wrap("theme.js").replace("/*STREETSCAPE*/", () => JSON.stringify(fs.readFileSync("streetscape.svg", "utf8")));                      // every page
+const theme = wrap("theme.js").replace('"/*STREETSCAPE*/"', () => JSON.stringify(fs.readFileSync("streetscape.svg", "utf8")));                      // every page
 const egg = WITH_EGG ? wrap("penguin.js") : "";      // one page, and only when asked for
 
 fs.rmSync(OUT, { recursive: true, force: true });

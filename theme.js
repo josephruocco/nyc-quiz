@@ -165,7 +165,7 @@
   const street = document.createElement("div");
   street.className = "streetscape";
   street.setAttribute("aria-hidden", "true");
-  street.innerHTML = /*STREETSCAPE*/;
+  street.innerHTML = "/*STREETSCAPE*/";
   document.body.insertBefore(street, credit);
 
   // ---- challenge a friend
