@@ -138,7 +138,7 @@
 <div class="wrap">
   <header>
     <h1>Name Every Neighborhood</h1>
-    <p class="sub">Four boroughs, 220 neighborhoods. Type a name and it fills in. Abbreviations work: bed stuy, LIC, UWS, FiDi, Co-op City.</p>
+    <p class="sub"><span id="neighborhoodCount">All five boroughs.</span> Type a name and it fills in. Abbreviations work: bed stuy, LIC, UWS, FiDi, Co-op City.</p>
   </header>
 
   <div class="bar">
@@ -203,6 +203,7 @@ for (const [name, cvar, list] of BOROUGHS) {
   grid.appendChild(col);
 }
 document.getElementById("total").textContent = total;
+document.getElementById("neighborhoodCount").textContent = `${BOROUGHS.length} boroughs, ${total} neighborhoods.`;
 
 const input = document.getElementById("guess");
 const flash = document.getElementById("flash");
@@ -266,6 +267,6 @@ input.focus();
 // self-check
 console.assert(norm("Bed-Stuy") === "bedstuy", "norm strips punctuation");
 console.assert(slots.filter(s => s.key === "murrayhill").length === 2, "Murray Hill exists in two boroughs");
-console.assert(new Set(slots.map(s => s.el.textContent)).size === slots.length - 1, "Murray Hill is the only duplicate name");
-console.assert(total === 220, "220 neighborhoods");
+console.assert(BOROUGHS.every(([, , names]) => new Set(names.map(norm)).size === names.length), "names are unique within each borough");
+console.assert(BOROUGHS.length === 5, "all five boroughs included");
 </script>
