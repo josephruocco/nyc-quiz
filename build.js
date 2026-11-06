@@ -22,6 +22,7 @@ const BLOBS = {
 const WITH_EGG = process.env.PENGUIN === "1";
 
 const wrap = f => `\n<script>\n${fs.readFileSync(f, "utf8")}</script>\n`;
+const design = `\n<style>\n${fs.readFileSync("design.css", "utf8")}</style>\n`;
 const theme = wrap("theme.js");                      // every page
 const egg = WITH_EGG ? wrap("penguin.js") : "";      // one page, and only when asked for
 
@@ -31,7 +32,7 @@ fs.mkdirSync(OUT);
 const EGG_PAGE = "pinpoint.html";   // the easter egg lives on exactly one page
 
 const write = (name, html) => {
-  fs.writeFileSync(`${OUT}/${name}`, html + theme + (name === EGG_PAGE && WITH_EGG ? egg : ""));
+  fs.writeFileSync(`${OUT}/${name}`, html + theme + design + (name === EGG_PAGE && WITH_EGG ? egg : ""));
   console.log(`${OUT}/${name}  ${(fs.statSync(`${OUT}/${name}`).size / 1024).toFixed(0)}K`);
 };
 
