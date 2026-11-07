@@ -33,7 +33,7 @@ fs.mkdirSync(OUT);
 const EGG_PAGE = "pinpoint.html";   // the easter egg lives on exactly one page
 
 const write = (name, html) => {
-  fs.writeFileSync(`${OUT}/${name}`, html + theme + design + (name === "index.html" ? signFont : "") + (name === EGG_PAGE && WITH_EGG ? egg : ""));
+  fs.writeFileSync(`${OUT}/${name}`, html + theme + design + (name === "index.html" ? signFont + wrap("headline.js") : "") + (name === EGG_PAGE && WITH_EGG ? egg : ""));
   console.log(`${OUT}/${name}  ${(fs.statSync(`${OUT}/${name}`).size / 1024).toFixed(0)}K`);
 };
 
