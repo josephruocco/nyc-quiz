@@ -29,11 +29,12 @@ const egg = WITH_EGG ? wrap("penguin.js") : "";      // one page, and only when 
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT);
+fs.cpSync("gameplay", `${OUT}/gameplay`, { recursive: true });
 
 const EGG_PAGE = "pinpoint.html";   // the easter egg lives on exactly one page
 
 const write = (name, html) => {
-  fs.writeFileSync(`${OUT}/${name}`, html + theme + design + (name === "index.html" ? signFont + wrap("headline.js") : "") + (name === EGG_PAGE && WITH_EGG ? egg : ""));
+  fs.writeFileSync(`${OUT}/${name}`, html + theme + design + (name === "index.html" ? signFont + wrap("headline.js") + wrap("previews.js") : "") + (name === EGG_PAGE && WITH_EGG ? egg : ""));
   console.log(`${OUT}/${name}  ${(fs.statSync(`${OUT}/${name}`).size / 1024).toFixed(0)}K`);
 };
 
@@ -55,7 +56,7 @@ if (built.includes("peng-waddle") !== WITH_EGG) {
   console.error(`${EGG_PAGE}: penguin ${WITH_EGG ? "missing from" : "leaked into"} the build`);
   process.exit(1);
 }
-if (!WITH_EGG && fs.readdirSync(OUT).some(f => fs.readFileSync(`${OUT}/${f}`, "utf8").includes("peng-waddle"))) {
+if (!WITH_EGG && fs.readdirSync(OUT).filter(f => f.endsWith(".html")).some(f => fs.readFileSync(`${OUT}/${f}`, "utf8").includes("peng-waddle"))) {
   console.error("penguin leaked into a page other than " + EGG_PAGE);
   process.exit(1);
 }
