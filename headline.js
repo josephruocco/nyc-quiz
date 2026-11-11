@@ -55,5 +55,6 @@
   document.addEventListener("visibilitychange", schedule);
   motion.addEventListener("change", preferences);
   new ResizeObserver(fit).observe(line);
+  document.fonts.ready.then(fit);
   preferences();
 })();
