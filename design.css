@@ -160,7 +160,7 @@ body.map-expanded .map-controls button { font-size:10px; padding:9px 8px; letter
 /* Reserve a single headline line so different place lengths never shift the page. */
 .hero-copy { min-width:0; }
 .new-york { position:relative; height:1.12em; line-height:1.12; }
-#rotating-place { display:inline-block; vertical-align:top; opacity:1; transition:opacity 160ms ease,transform 160ms ease; transform:translateY(0); }
+#rotating-place { display:inline-block; vertical-align:top; font-style:italic; opacity:1; transition:opacity 160ms ease,transform 160ms ease; transform:translateY(0); }
 #rotating-place.is-changing { opacity:0; transform:translateY(5px); }
 .rotation-toggle { position:absolute; right:0; top:50%; transform:translateY(-50%); width:32px; height:32px; border:0; border-radius:50%; background:transparent; color:var(--dim); cursor:pointer; padding:0; font:600 13px/1 var(--display); letter-spacing:0; }
 .rotation-toggle:hover { background:var(--panel); color:var(--text); }

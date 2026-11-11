@@ -37,7 +37,7 @@
         word.classList.remove("is-changing");
         schedule();
       }, 160);
-    }, 3000);
+    }, 2000);
   }
   button.addEventListener("click", () => {
     paused = !paused;
