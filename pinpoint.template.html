@@ -102,6 +102,8 @@
   button:hover { border-color: var(--text); }
   button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
   button[hidden] { display: none; }
+  .difficulty-note { margin:4px 0 0; font-size:14px; font-weight:600; line-height:1.4; }
+  body.map-expanded .difficulty-note { display:none; }
 </style>
 
 <div class="wrap map-quiz-wrap">
@@ -116,7 +118,8 @@
     <span class="stats"><b id="hits">0</b> exact &middot; avg miss <b id="avg">n/a</b></span>
   </div>
 
-  <div class="opts" id="boroOpts" role="group" aria-label="Boroughs included"></div>
+  <h2 class="difficulty-note" id="difficulty-note">Pick your difficulty before you start!</h2>
+  <div class="opts" id="boroOpts" role="group" aria-label="Boroughs included" aria-describedby="difficulty-note"></div>
 
   <div class="opts map-controls">
     <button id="lines" aria-pressed="true">Boundaries</button>
