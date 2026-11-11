@@ -118,12 +118,19 @@
   #startBtn { align-self: flex-start; font-size: 13px; padding: 15px 26px; background: var(--text); color: var(--paper); border-color: var(--text); }
   #startBtn:hover { opacity: 0.85; }
   .setup .note { color: var(--dim); font-size: 13px; font-family: var(--mono); }
+  [data-map-only][hidden],.stage[hidden],.neighborhood-list[hidden] { display:none; }
+  .neighborhood-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:24px; margin-top:24px; order:6; }
+  .neighborhood-list h2 { color:var(--c); font-size:13px; border-bottom:2px solid var(--c); padding-bottom:8px; }
+  .neighborhood-list ul { list-style:none; padding:0; margin:0; }
+  .neighborhood-list li { min-height:28px; border-left:2px solid var(--line); padding:5px 9px; font-size:13px; }
+  .neighborhood-list li.named { border-color:var(--c); }
+  .neighborhood-list li.missed { color:var(--dim); }
 </style>
 
 <div class="wrap map-quiz-wrap">
   <header>
-    <h1>Fill In the Map</h1>
-    <p class="sub">Type neighborhood names to fill in the map.</p>
+    <h1 id="quizTitle">Fill In the Map</h1>
+    <p class="sub">Type neighborhood names. Keep the map on or test your memory without it.</p>
   </header>
 
   <form class="setup" id="setup">
@@ -141,6 +148,13 @@
       </div>
       <p class="note" id="setupNote"></p>
     </fieldset>
+    <fieldset>
+      <legend>Map</legend>
+      <div class="choices">
+        <button type="button" id="mapOn" aria-pressed="true">Map on</button>
+        <button type="button" id="mapOff" aria-pressed="false">Map off</button>
+      </div>
+    </fieldset>
     <button type="submit" id="startBtn">Start quiz</button>
   </form>
 
@@ -149,7 +163,7 @@
 
   <div class="bar">
     <input id="guess" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Type a neighborhood…" aria-label="Type a neighborhood name">
-    <div class="score"><span id="found">0</span>/<span id="total">0</span> <small>filled</small></div>
+    <div class="score"><span id="found">0</span>/<span id="total">0</span> <small>found</small></div>
     <div class="clock" id="clock" hidden aria-label="Time remaining"></div>
     <button id="skip" hidden>Skip</button>
     <button id="reveal">Give up</button>
@@ -159,19 +173,21 @@
   <div class="flash" id="flash"></div>
 
   <div class="opts">
-    <button id="mode" aria-pressed="false">One at a time</button>
-    <button id="lines" aria-pressed="true">Boundaries</button>
-    <button id="labels" aria-pressed="true">Labels</button>
+    <button id="showMap" aria-pressed="true" aria-controls="mapStage neighborhoodList">Map on</button>
+    <button id="mode" data-map-only aria-pressed="false">One at a time</button>
+    <button id="lines" data-map-only aria-pressed="true">Boundaries</button>
+    <button id="labels" data-map-only aria-pressed="true">Labels</button>
     <span class="spacer"></span>
-    <button id="zoomOut" aria-label="Zoom out">&minus;</button>
-    <span class="zoomlvl" id="zoomlvl">1.0&times;</span>
-    <button id="zoomIn" aria-label="Zoom in">+</button>
-    <button id="reset">Reset view</button>
+    <button id="zoomOut" data-map-only aria-label="Zoom out">&minus;</button>
+    <span class="zoomlvl" id="zoomlvl" data-map-only>1.0&times;</span>
+    <button id="zoomIn" data-map-only aria-label="Zoom in">+</button>
+    <button id="reset" data-map-only>Reset view</button>
   </div>
 
-  <div class="stage"><canvas id="map" aria-label="Map of NYC neighborhoods, filled in as you name them"></canvas></div>
+  <div class="stage" id="mapStage"><canvas id="map" aria-label="Map of NYC neighborhoods, filled in as you name them"></canvas></div>
 
   <div class="tallies" id="tallies"></div>
+  <div class="neighborhood-list" id="neighborhoodList" hidden></div>
 </div>
 </div>
 
@@ -247,6 +263,7 @@ function fitHeight() {
 
 function layout() {
   const w = cv.clientWidth;
+  if (!w || !showMap) return;
   lastW = w;
   // Portrait phones need a tall box; a width-driven ratio collapses the map to a strip.
   const narrow = w < 600;
@@ -281,6 +298,7 @@ function path(rings) {
 }
 
 function draw() {
+  if (!showMap || !cv.clientWidth) return;
   const w = cv.clientWidth, h = parseFloat(cv.style.height);
   ctx.clearRect(0, 0, w, h);
   const showLines = el("lines").getAttribute("aria-pressed") === "true";
@@ -355,7 +373,67 @@ function fill(hoods, missed) {
     tallyEls[h.b].textContent = +tallyEls[h.b].textContent + 1;
   }
   el("found").textContent = [...guessed].filter(h => !h.missed).length;
+  updateList();
 }
+
+const listEls = new Map();
+function buildList() {
+  el("neighborhoodList").replaceChildren();
+  listEls.clear();
+  for (const borough of BOROS) {
+    const neighborhoods = HOODS.filter(hood => hood.b === borough);
+    if (!neighborhoods.length) continue;
+    const section = document.createElement("section");
+    section.style.setProperty("--c", `var(${COLOR[borough]})`);
+    const heading = document.createElement("h2");
+    heading.textContent = borough;
+    const list = document.createElement("ul");
+    for (const hood of neighborhoods) {
+      const item = document.createElement("li");
+      item.textContent = "—";
+      item.setAttribute("aria-label", "Not named yet");
+      listEls.set(hood, item);
+      list.appendChild(item);
+    }
+    section.append(heading, list);
+    el("neighborhoodList").appendChild(section);
+  }
+}
+
+function updateList() {
+  for (const [hood, item] of listEls) {
+    if (!guessed.has(hood)) continue;
+    item.textContent = hood.n + (hood.missed ? " (missed)" : "");
+    item.className = hood.missed ? "missed" : "named";
+    item.removeAttribute("aria-label");
+  }
+}
+
+let showMap = new URLSearchParams(location.search).get("map") !== "off";
+function setMapVisible(visible) {
+  showMap = visible;
+  el("mapOn").setAttribute("aria-pressed", String(visible));
+  el("mapOff").setAttribute("aria-pressed", String(!visible));
+  el("showMap").setAttribute("aria-pressed", String(visible));
+  el("showMap").textContent = visible ? "Map on" : "Map off";
+  el("mapStage").hidden = !visible;
+  el("neighborhoodList").hidden = visible;
+  for (const control of document.querySelectorAll("[data-map-only]")) control.hidden = !visible;
+  el("quizTitle").textContent = visible ? "Fill In the Map" : "Name Every Neighborhood";
+  document.title = el("quizTitle").textContent;
+  if (!visible && mode === "one") {
+    mode = "free";
+    target = null;
+    el("mode").setAttribute("aria-pressed", "false");
+    el("skip").hidden = true;
+    document.documentElement.style.removeProperty("--c");
+    if (!revealed) el("promptText").textContent = "Name them in any order.";
+  }
+  if (visible && !el("game").hidden) layout();
+}
+el("mapOn").addEventListener("click", () => setMapVisible(true));
+el("mapOff").addEventListener("click", () => setMapVisible(false));
+el("showMap").addEventListener("click", () => setMapVisible(!showMap));
 
 // ---- guessing
 el("guess").addEventListener("input", () => {
@@ -423,7 +501,7 @@ function giveUp(why) {
   if (revealed) return;
   const missed = remaining();
   fill(missed, true);
-  finish(`${why}. ${missed.length} unnamed. Faded shapes are the ones you missed.`);
+  finish(`${why}. ${missed.length} unnamed. Missed neighborhoods are faded on the map and marked in the list.`);
 }
 
 el("reveal").addEventListener("click", () => giveUp("Stopped"));
@@ -605,14 +683,16 @@ el("setup").addEventListener("submit", e => {
   INDEX = buildIndex(HOODS);
   fitBounds();
   buildTallies();
+  buildList();
   el("setup").hidden = true;
   el("game").hidden = false;
-  layout();
+  setMapVisible(showMap);
   if (timed) startClock(budget(HOODS.length));
   el("guess").focus();
 });
 
 refreshSetup();
+setMapVisible(showMap);
 
 // self-check
 console.assert(ALL.length === 197, "197 neighborhoods");

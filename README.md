@@ -5,10 +5,14 @@ city's NTA boundary data, plus two over the subway network. Each game is a singl
 file with the geometry embedded — no runtime fetches, no dependencies.
 
 - **Fill In the Map** — type a neighborhood, it paints itself onto the city. Pick your
-  boroughs, free-form or one-at-a-time, with or without a 15-minute clock.
+  boroughs, free-form or one-at-a-time, with or without a 15-minute clock. Turn the
+  map off to name neighborhoods from memory in a borough-grouped list. Toggle it
+  back on without losing guesses or restarting the clock. Both views use the same
+  197-neighborhood NTA dataset; one-at-a-time mode is available with the map on.
 - **Pinpoint the Neighborhood** — boundaries drawn, none labeled. Click where you think
   the named one sits. 20 rounds, scored on miss distance.
-- **Name Every Neighborhood** — no map, just a list to fill in.
+- The former **Name Every Neighborhood** page redirects to the merged game's
+  map-off setup at `fill-the-map.html?map=off`.
 - **Pinpoint the Line** — the subway network drawn but unlabeled. Click anywhere along
   the train you're asked for. Hard mode gives you a station name instead, so you have
   to know which line serves it. Geographic map. Staten Island Railway is left out:
