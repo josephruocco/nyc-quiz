@@ -138,7 +138,7 @@
 <div class="wrap">
   <header>
     <h1>Name Every Neighborhood</h1>
-    <p class="sub"><span id="neighborhoodCount">All five boroughs.</span> Type a name and it fills in. Abbreviations work: bed stuy, LIC, UWS, FiDi, Co-op City.</p>
+    <p class="sub">Type as many neighborhood names as you can.</p>
   </header>
 
   <div class="bar">
@@ -203,7 +203,6 @@ for (const [name, cvar, list] of BOROUGHS) {
   grid.appendChild(col);
 }
 document.getElementById("total").textContent = total;
-document.getElementById("neighborhoodCount").textContent = `${BOROUGHS.length} boroughs, ${total} neighborhoods.`;
 
 const input = document.getElementById("guess");
 const flash = document.getElementById("flash");
