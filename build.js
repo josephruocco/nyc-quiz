@@ -7,8 +7,6 @@
 // use more than one marker (the subway page draws the neighbourhoods as a backdrop).
 // Every other root .html (index, name-them-all) is copied through as-is.
 //
-// The penguin is left out by default, so the public build is the plain game.
-// Pass PENGUIN=1 to include him:  PENGUIN=1 node build.js
 const fs = require("fs");
 
 const OUT = "dist";
@@ -19,13 +17,13 @@ const BLOBS = {
   "/*SUBWAY*/": "subway_data.json",
 };
 
-const WITH_EGG = process.env.PENGUIN === "1";
+const WITH_EGG = process.env.PENGUIN !== "0";
 
 const wrap = f => `\n<script>\n${fs.readFileSync(f, "utf8")}</script>\n`;
 const design = `\n<style>\n${fs.readFileSync("design.css", "utf8")}</style>\n`;
 const signFont = `<style>@font-face { font-family:"Overpass"; src:url(data:font/ttf;base64,${fs.readFileSync("fonts/Overpass.ttf").toString("base64")}) format("truetype"); font-weight:100 900; font-display:swap; }</style>`;
 const theme = wrap("theme.js").replace('"/*STREETSCAPE*/"', () => JSON.stringify(fs.readFileSync("streetscape.svg", "utf8")));                      // every page
-const egg = WITH_EGG ? wrap("penguin.js") : "";      // one page, and only when asked for
+const egg = WITH_EGG ? wrap("penguin.js") : "";
 
 fs.rmSync(OUT, { recursive: true, force: true });
 fs.mkdirSync(OUT);
@@ -48,15 +46,14 @@ for (const f of fs.readdirSync(".").filter(f => f.endsWith(".template.html"))) {
 
 for (const f of STATIC) write(f, fs.readFileSync(f, "utf8"));
 
-console.log(WITH_EGG ? "penguin: in (PENGUIN=1)" : "penguin: out (public build)");
+console.log(WITH_EGG ? "penguin: in (pinpoint only)" : "penguin: out (PENGUIN=0)");
 
-// The public build must not ship the egg, and the private one must.
 const built = fs.readFileSync(`${OUT}/${EGG_PAGE}`, "utf8");
 if (built.includes("peng-waddle") !== WITH_EGG) {
   console.error(`${EGG_PAGE}: penguin ${WITH_EGG ? "missing from" : "leaked into"} the build`);
   process.exit(1);
 }
-if (!WITH_EGG && fs.readdirSync(OUT).filter(f => f.endsWith(".html")).some(f => fs.readFileSync(`${OUT}/${f}`, "utf8").includes("peng-waddle"))) {
+if (fs.readdirSync(OUT).filter(f => f.endsWith(".html") && f !== EGG_PAGE).some(f => fs.readFileSync(`${OUT}/${f}`, "utf8").includes("peng-waddle"))) {
   console.error("penguin leaked into a page other than " + EGG_PAGE);
   process.exit(1);
 }

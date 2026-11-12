@@ -48,16 +48,24 @@
                             25%  { opacity: 0.9; }
                             to   { transform: translate(4px,-40px) scale(1.1); opacity: 0; } }
     /* bottom:0 and no rotation on the body, so he stands on the bottom edge always. */
-    .peng { position: fixed; bottom: 0; left: 0; z-index: 0; pointer-events: none; opacity: 0.9; }
+    .peng-layer { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+    body.map-expanded > .peng-layer { display: none; }
+    @media (prefers-reduced-motion: reduce) { .peng-layer { display: none; } }
+    .peng { position: absolute; bottom: 0; left: 0; pointer-events: none; opacity: 0.9; }
     .peng > svg { transform-origin: 50% 90%; }
     .peng.walking > svg { animation: peng-waddle 0.42s ease-in-out infinite; }
     .peng.looking > svg { animation: peng-look 1.1s ease-in-out 1; }
     .peng.flip > svg { scale: -1 1; }
     .peng.waving .wing { animation: peng-wave 0.36s ease-in-out 5; transform-origin: 30px 24px; }
-    .peng-kiss { position: fixed; bottom: 36px; z-index: 0; pointer-events: none;
+    .peng-kiss { position: absolute; bottom: 36px; pointer-events: none;
                  font-size: 15px; color: #E2557B; animation: peng-kiss 1.5s ease-out forwards; }
   `;
   document.head.appendChild(style);
+
+  const layer = document.createElement("div");
+  layer.className = "peng-layer";
+  layer.setAttribute("aria-hidden", "true");
+  document.body.appendChild(layer);
 
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const between = ([lo, hi]) => lo + Math.random() * (hi - lo);
@@ -67,14 +75,14 @@
     heart.className = "peng-kiss";
     heart.textContent = "♥";
     heart.style.left = x + "px";
-    document.body.appendChild(heart);
+    layer.appendChild(heart);
     setTimeout(() => heart.remove(), 1600);
   }
 
   let busy = false;
 
   async function visit(routine = pickRoutine()) {
-    if (busy) return null;
+    if (busy || document.body.classList.contains("map-expanded") || matchMedia("(prefers-reduced-motion: reduce)").matches) return null;
     busy = true;
 
     const fromRight = Math.random() < 0.5;
@@ -87,7 +95,7 @@
     box.className = "peng walking" + (fromRight ? " flip" : "");
     box.innerHTML = svg;
     box.style.transform = `translateX(${off}px)`;
-    document.body.appendChild(box);
+    layer.appendChild(box);
 
     const slide = (a, b, ms, easing) => box.animate(
       [{ transform: `translateX(${a}px)` }, { transform: `translateX(${b}px)` }],
@@ -140,7 +148,7 @@
   const probe = document.createElement("div");
   probe.className = "peng walking";
   probe.innerHTML = svg;
-  document.body.appendChild(probe);
+  layer.appendChild(probe);
   const r = probe.getBoundingClientRect();   // the container, not the mid-waddle svg
   console.assert(getComputedStyle(probe).pointerEvents === "none", "the penguin never intercepts clicks");
   console.assert(!probe.querySelector("a, button, input, [tabindex]"), "penguin holds nothing focusable");

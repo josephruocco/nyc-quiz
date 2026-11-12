@@ -32,15 +32,16 @@ node build.js          # -> dist/
 drawing the neighborhoods as a faint backdrop), copies the static pages through,
 and appends `theme.js` to every page.
 
-The penguin easter egg is **left out by default**, so `node build.js` is the
-public build. To include him:
+The penguin easter egg is included by default on **Pinpoint the Neighborhood**
+only. It ignores taps, stays clipped to the viewport, and is hidden in expanded
+map mode and when reduced motion is preferred. To build without it:
 
 ```sh
-PENGUIN=1 node build.js
+PENGUIN=0 node build.js
 ```
 
-The build fails rather than shipping the wrong thing: it exits non-zero if the
-egg is missing from a `PENGUIN=1` build, or present anywhere in a public one.
+The build exits non-zero if the penguin does not match the selected setting on
+Pinpoint the Neighborhood, or appears on any other page.
 
 To regenerate the geometry from scratch:
 
