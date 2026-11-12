@@ -5,7 +5,7 @@
 (() => {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-  const FIRST = [18_000, 40_000];    // first appearance after load
+  const FIRST = [300, 500];    // first appearance after load
   const GAP = [50_000, 110_000];     // and roughly every minute or two after that
   const IN = 1400, OUT = 1100;
   const CROSS = 13_000;              // time to waddle the full width
