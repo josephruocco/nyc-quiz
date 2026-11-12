@@ -125,9 +125,14 @@
   .neighborhood-list li { min-height:28px; border-left:2px solid var(--line); padding:5px 9px; font-size:13px; }
   .neighborhood-list li.named { border-color:var(--c); }
   .neighborhood-list li.missed { color:var(--dim); }
+  body.map-expanded > .wrap.naming-quiz-wrap { height:var(--map-viewport-height,100dvh); }
+  body.map-expanded .naming-quiz-wrap #game { display:flex; flex-direction:column; flex:1; min-height:0; gap:8px; }
+  body.map-expanded .naming-quiz-wrap .bar { flex:none; }
+  body.map-expanded .naming-quiz-wrap .flash { min-height:0; flex:none; }
+  body.map-expanded .naming-quiz-wrap .tallies { display:none; }
 </style>
 
-<div class="wrap map-quiz-wrap">
+<div class="wrap map-quiz-wrap naming-quiz-wrap">
   <header>
     <h1 id="quizTitle">Fill In the Map</h1>
     <p class="sub">Type neighborhood names. Keep the map on or test your memory without it.</p>
@@ -172,7 +177,7 @@
 
   <div class="flash" id="flash"></div>
 
-  <div class="opts">
+  <div class="opts map-controls">
     <button id="showMap" aria-pressed="true" aria-controls="mapStage neighborhoodList">Map on</button>
     <button id="mode" data-map-only aria-pressed="false">One at a time</button>
     <button id="lines" data-map-only aria-pressed="true">Boundaries</button>
@@ -182,6 +187,7 @@
     <span class="zoomlvl" id="zoomlvl" data-map-only>1.0&times;</span>
     <button id="zoomIn" data-map-only aria-label="Zoom in">+</button>
     <button id="reset" data-map-only>Reset view</button>
+    <button id="expandMap" data-map-only aria-pressed="false" aria-controls="mapStage">Expand map</button>
   </div>
 
   <div class="stage" id="mapStage"><canvas id="map" aria-label="Map of NYC neighborhoods, filled in as you name them"></canvas></div>
@@ -412,6 +418,7 @@ function updateList() {
 let showMap = new URLSearchParams(location.search).get("map") !== "off";
 function setMapVisible(visible) {
   showMap = visible;
+  if (!visible) setMapExpanded(false);
   el("mapOn").setAttribute("aria-pressed", String(visible));
   el("mapOff").setAttribute("aria-pressed", String(!visible));
   el("showMap").setAttribute("aria-pressed", String(visible));
@@ -434,6 +441,30 @@ function setMapVisible(visible) {
 el("mapOn").addEventListener("click", () => setMapVisible(true));
 el("mapOff").addEventListener("click", () => setMapVisible(false));
 el("showMap").addEventListener("click", () => setMapVisible(!showMap));
+
+function refreshMapViewport() {
+  if (document.body.classList.contains("map-expanded")) {
+    document.documentElement.style.setProperty("--map-viewport-height", `${window.visualViewport ? window.visualViewport.height : innerHeight}px`);
+  }
+  requestAnimationFrame(layout);
+}
+function setMapExpanded(expanded) {
+  expanded = expanded && showMap && !el("game").hidden;
+  document.body.classList.toggle("map-expanded", expanded);
+  el("expandMap").textContent = expanded ? "Exit map" : "Expand map";
+  el("expandMap").setAttribute("aria-pressed", String(expanded));
+  if (!expanded) document.documentElement.style.removeProperty("--map-viewport-height");
+  refreshMapViewport();
+}
+el("expandMap").addEventListener("click", () => setMapExpanded(!document.body.classList.contains("map-expanded")));
+addEventListener("keydown", event => {
+  if (event.key === "Escape" && document.body.classList.contains("map-expanded")) {
+    setMapExpanded(false);
+    el("expandMap").focus();
+  }
+});
+addEventListener("resize", refreshMapViewport);
+if (window.visualViewport) window.visualViewport.addEventListener("resize", refreshMapViewport);
 
 // ---- guessing
 el("guess").addEventListener("input", () => {

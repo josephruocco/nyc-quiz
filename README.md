@@ -9,6 +9,8 @@ file with the geometry embedded — no runtime fetches, no dependencies.
   map off to name neighborhoods from memory in a borough-grouped list. Toggle it
   back on without losing guesses or restarting the clock. Both views use the same
   197-neighborhood NTA dataset; one-at-a-time mode is available with the map on.
+  Expand the map to fill the screen while keeping the guess field and map controls
+  available. Use Exit map or Escape to return; turning the map off also exits.
 - **Pinpoint the Neighborhood** — boundaries drawn, none labeled. Click where you think
   the named one sits. 20 rounds, scored on miss distance.
 - The former **Name Every Neighborhood** page redirects to the merged game's
