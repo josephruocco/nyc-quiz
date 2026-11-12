@@ -87,21 +87,22 @@
     .challenge b { font-weight: 700; }
 
     /* The shareable link, shown on the finish screen. */
-    .share-box { margin: 4px 0 0; text-align: center; }
+    .share-box { order: 6; flex: none; min-width: 0; margin: 4px 0 0; text-align: center; }
     .share-box[hidden] { display: none; }
     .share-cap { color: var(--dim); font-size: 14px; line-height: 1.5; margin: 0 0 10px; }
-    .share-row { display: flex; gap: 8px; max-width: 560px; margin: 0 auto; }
+    .share-row { display: flex; flex-wrap: wrap; gap: 8px; max-width: 560px; margin: 0 auto; }
     .share-url {
-      flex: 1; min-width: 0; font: 500 13px/1 var(--mono, monospace); color: var(--dim);
+      flex: 1 1 160px; min-width: 0; font: 500 13px/1 var(--mono, monospace); color: var(--dim);
       background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px;
       text-overflow: ellipsis;
     }
-    .share-copy {
+    .share-copy, .share-native {
       flex: none; font: 700 13px/1 var(--display, sans-serif); color: var(--text);
-      background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 18px; cursor: pointer;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 18px; min-height: 44px; cursor: pointer;
     }
-    .share-copy:hover { border-color: var(--text); }
-    .share-copy:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+    .share-copy:hover, .share-native:hover { border-color: var(--text); }
+    .share-copy:focus-visible, .share-native:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+    .share-status { font-size: 13px; color: var(--dim); margin: 8px 0 0; }
   `;
   document.head.appendChild(style);
 
@@ -189,10 +190,13 @@
   // serves (a fresh round set), so "same quiz, beat my number".
   const wrap = document.querySelector(".wrap");
   const beat = new URLSearchParams(location.search).get("beat");
+  const beatTotal = new URLSearchParams(location.search).get("total");
   if (wrap && beat !== null && /^\d+$/.test(beat)) {
     const banner = document.createElement("div");
     banner.className = "challenge";
-    banner.innerHTML = `A friend scored <b>${beat}</b> here. Beat them.`;
+    const score = beatTotal && /^\d+$/.test(beatTotal) && Number(beatTotal) > 0 && Number(beat) <= Number(beatTotal)
+      ? `${beat}/${beatTotal}` : beat;
+    banner.innerHTML = `A friend scored <b>${score}</b> here. Beat them.`;
     wrap.insertBefore(banner, wrap.firstChild);
   }
 
@@ -200,31 +204,54 @@
   // Copy button and a caption, so it's plainly there to copy and send. Built once,
   // then reused; hidden again by hideShareBox() when a new run starts.
   let shareBox;
+  let shareData;
   // extra is an optional query fragment (e.g. "boro=bk&lines=0") the quiz uses to
   // carry its settings, so a friend opening the link plays the same mode.
   window.showShareBox = (score, total, label, extra) => {
-    const url = location.origin + location.pathname + "?beat=" + score + (extra ? "&" + extra : "");
+    const params = new URLSearchParams(extra || "");
+    params.set("beat", score);
+    params.set("total", total);
+    const url = location.origin + location.pathname + "?" + params;
+    shareData = { title: label, text: `I scored ${score}/${total} on ${label}. Can you beat me?`, url };
     if (!shareBox) {
       shareBox = document.createElement("div");
       shareBox.className = "share-box";
       shareBox.innerHTML =
         `<p class="share-cap"></p>` +
         `<div class="share-row"><input class="share-url" readonly aria-label="Challenge link">` +
-        `<button type="button" class="share-copy">Copy</button></div>`;
+        `<button type="button" class="share-native">Share score</button>` +
+        `<button type="button" class="share-copy">Copy link</button></div>` +
+        `<p class="share-status" role="status"></p>`;
       (document.querySelector(".wrap") || document.body).appendChild(shareBox);
       const input = shareBox.querySelector(".share-url");
-      const btn = shareBox.querySelector(".share-copy");
-      btn.addEventListener("click", () => {
-        input.select();
-        (navigator.clipboard ? navigator.clipboard.writeText(input.value) : Promise.reject()).catch(() => {});
-        try { document.execCommand("copy"); } catch (e) {}   // fallback for older/insecure contexts
-        btn.textContent = "Copied";
-        setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+      const status = shareBox.querySelector(".share-status");
+      const copy = async () => {
+        try {
+          await navigator.clipboard.writeText(input.value);
+          status.textContent = "Link copied. Send it to a friend!";
+        } catch {
+          input.focus();
+          input.select();
+          let copied = false;
+          try { copied = document.execCommand("copy"); } catch {}
+          status.textContent = copied ? "Link copied. Send it to a friend!" : "Select and copy the link to share your score.";
+        }
+      };
+      shareBox.querySelector(".share-copy").addEventListener("click", copy);
+      shareBox.querySelector(".share-native").addEventListener("click", async () => {
+        if (!navigator.share) return copy();
+        try {
+          await navigator.share(shareData);
+          status.textContent = "Score shared!";
+        } catch (error) {
+          if (error.name !== "AbortError") await copy();
+        }
       });
     }
     shareBox.querySelector(".share-cap").textContent =
       `Send this to a friend to see if they can beat your ${score}/${total}.`;
     shareBox.querySelector(".share-url").value = url;
+    shareBox.querySelector(".share-status").textContent = "";
     shareBox.hidden = false;
   };
   window.hideShareBox = () => { if (shareBox) shareBox.hidden = true; };

@@ -21,6 +21,14 @@ file with the geometry embedded — no runtime fetches, no dependencies.
 - **Which Train?** — a station name and the full set of bullets. Pick every line that
   stops there, with no map to work it out from.
 
+## Share a score
+
+After finishing Pinpoint the Neighborhood, Pinpoint the Line, or Which Train?,
+choose **Share score** to open the device's share sheet, or **Copy link** to send
+the challenge yourself. Without native sharing, Share score copies the link.
+Friends see the score to beat, including the total; neighborhood challenges also
+preserve the selected boroughs and boundaries setting.
+
 ## Build
 
 ```sh
