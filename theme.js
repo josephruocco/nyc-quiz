@@ -161,21 +161,7 @@
   me.href = "https://josephruocco.net";
   me.textContent = "Joseph Ruocco";
   credit.appendChild(me);
-  if (onMenu) {
-    const signoff = document.createElement("p");
-    signoff.className = "subway-signoff";
-    signoff.setAttribute("role", "img");
-    signoff.setAttribute("aria-label", "LFGM — L, F, G, M subway lines");
-    for (const [route, color] of [["L", "#a7a9ac"], ["F", "#ff6319"], ["G", "#6cbe45"], ["M", "#ff6319"]]) {
-      const bullet = document.createElement("span");
-      bullet.className = "subway-signoff-bullet";
-      bullet.style.backgroundColor = color;
-      bullet.textContent = route;
-      bullet.setAttribute("aria-hidden", "true");
-      signoff.appendChild(bullet);
-    }
-    credit.appendChild(signoff);
-  }
+
   document.body.appendChild(credit);
 
   const street = document.createElement("div");
